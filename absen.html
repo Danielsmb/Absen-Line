@@ -8,15 +8,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4361ee;
-            --secondary-color: #3f37c9;
-            --accent-color: #f72585;
-            --success-color: #06ffa5;
-            --warning-color: #ffbe0b;
-            --danger-color: #fb5607;
-            --dark-color: #1a1a2e;
-            --light-color: #f8f9fa;
-            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --info: #4895ef;
+            --border-radius: 12px;
+            --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             --transition: all 0.3s ease;
         }
 
@@ -28,237 +29,277 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
             min-height: 100vh;
-            color: #333;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        .background-shapes {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-
-        .shape {
-            position: absolute;
-            border-radius: 50%;
-            opacity: 0.1;
-        }
-
-        .shape-1 {
-            width: 300px;
-            height: 300px;
-            background-color: var(--primary-color);
-            top: -100px;
-            right: -100px;
-            animation: float 20s infinite alternate ease-in-out;
-        }
-
-        .shape-2 {
-            width: 200px;
-            height: 200px;
-            background-color: var(--accent-color);
-            bottom: -50px;
-            left: -50px;
-            animation: float 15s infinite alternate-reverse ease-in-out;
-        }
-
-        .shape-3 {
-            width: 150px;
-            height: 150px;
-            background-color: var(--warning-color);
-            top: 50%;
-            left: 10%;
-            animation: float 25s infinite alternate ease-in-out;
-        }
-
-        @keyframes float {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            100% { transform: translate(20px, 20px) rotate(10deg); }
+            padding: 20px;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
         }
 
         header {
             text-align: center;
-            padding: 30px 0;
-            color: white;
-        }
-
-        header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .datetime-container {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 15px 30px;
-            display: inline-block;
-            margin-top: 10px;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
-        }
-
-        .datetime {
-            font-size: 1.2rem;
-            font-weight: 500;
-            color: white;
-        }
-
-        .shift-tabs {
-            display: flex;
-            justify-content: center;
-            margin: 30px 0;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .shift-tab {
-            padding: 12px 30px;
+            margin-bottom: 30px;
+            padding: 20px;
             background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+
+        h1 {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+
+        .date-time {
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
             border-radius: 50px;
-            font-weight: 600;
+            display: inline-block;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 18px 0;
             cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1rem;
             transition: var(--transition);
-            box-shadow: var(--card-shadow);
-            border: none;
-            font-size: 1rem;
-            color: var(--dark-color);
+            position: relative;
         }
 
-        .shift-tab:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-        }
-
-        .shift-tab.active {
-            background: var(--primary-color);
+        .tab.active {
+            background: var(--primary);
             color: white;
         }
 
-        .staff-grid {
+        .tab:not(.active):hover {
+            background: rgba(67, 97, 238, 0.1);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid var(--light);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .staff-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
         .staff-card {
             background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: var(--card-shadow);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
             transition: var(--transition);
             display: flex;
             flex-direction: column;
+            position: relative;
+            overflow: hidden;
         }
 
         .staff-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
         }
 
-        .staff-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            padding: 20px;
-            color: white;
-            position: relative;
+        .staff-card.absent {
+            border-left: 5px solid var(--danger);
         }
 
-        .staff-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 2rem;
-            color: var(--primary-color);
+        .staff-card.present {
+            border-left: 5px solid var(--success);
         }
 
         .staff-name {
-            font-size: 1.3rem;
             font-weight: 600;
-            text-align: center;
+            font-size: 1.3rem;
             margin-bottom: 5px;
+            color: var(--dark);
         }
 
         .staff-position {
-            text-align: center;
-            opacity: 0.9;
-            font-size: 0.9rem;
-        }
-
-        .staff-body {
-            padding: 20px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-align: center;
+            color: var(--primary);
+            font-weight: 500;
             margin-bottom: 15px;
         }
 
-        .status-present {
-            background-color: rgba(6, 255, 165, 0.2);
-            color: #06c756;
+        .staff-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 15px;
         }
 
         .status-absent {
-            background-color: rgba(251, 86, 7, 0.2);
-            color: var(--danger-color);
+            background: rgba(247, 37, 133, 0.1);
+            color: var(--danger);
         }
 
-        .attendance-time {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 20px;
-            text-align: center;
+        .status-present {
+            background: rgba(76, 201, 240, 0.1);
+            color: var(--success);
         }
 
-        .attendance-btn {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        .action-btn {
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-weight: 600;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: 500;
             cursor: pointer;
             transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             margin-top: auto;
         }
 
-        .attendance-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+        .action-btn:hover {
+            background: var(--secondary);
         }
 
-        .attendance-btn:disabled {
-            background: #ccc;
+        .action-btn:disabled {
+            background: #adb5bd;
             cursor: not-allowed;
-            transform: none;
+        }
+
+        .action-btn.absent {
+            background: var(--danger);
+        }
+
+        .action-btn.absent:hover {
+            background: #e01e6d;
+        }
+
+        .time-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .shift-info {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+        }
+
+        .shift-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .shift-time {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .present-stat {
+            color: var(--success);
+        }
+
+        .absent-stat {
+            color: var(--danger);
+        }
+
+        .total-stat {
+            color: var(--primary);
         }
 
         .notification {
@@ -266,15 +307,13 @@
             top: 20px;
             right: 20px;
             padding: 15px 25px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            color: white;
+            font-weight: 500;
             z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.5s ease;
         }
 
         .notification.show {
@@ -282,309 +321,397 @@
         }
 
         .notification.success {
-            border-left: 5px solid var(--success-color);
+            background: var(--success);
         }
 
         .notification.error {
-            border-left: 5px solid var(--danger-color);
-        }
-
-        .notification i {
-            font-size: 1.2rem;
-        }
-
-        .notification.success i {
-            color: var(--success-color);
-        }
-
-        .notification.error i {
-            color: var(--danger-color);
-        }
-
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 50px 20px;
-            color: white;
-        }
-
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.7;
-        }
-
-        .empty-state h3 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-        }
-
-        .empty-state p {
-            opacity: 0.8;
+            background: var(--danger);
         }
 
         footer {
             text-align: center;
             padding: 20px;
-            color: white;
-            margin-top: 50px;
+            color: #6c757d;
+            font-size: 0.9rem;
         }
 
         @media (max-width: 768px) {
-            header h1 { font-size: 2rem; }
-            .staff-grid { grid-template-columns: 1fr; }
-            .shift-tabs { flex-direction: column; align-items: center; }
-            .shift-tab { width: 200px; }
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .staff-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="background-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-    </div>
-
     <div class="container">
         <header>
-            <h1><i class="fas fa-user-check"></i> Sistem Absensi Staff</h1>
-            <div class="datetime-container">
-                <div class="datetime" id="datetime">Loading...</div>
+            <div class="logo">
+                <i class="fas fa-clipboard-check"></i>
+                <h1>Sistem Absensi Staff</h1>
+            </div>
+            <p class="subtitle">Absensi digital dengan integrasi Google Sheets</p>
+            <div class="date-time" id="currentDateTime">
+                <!-- Date and time will be updated by JavaScript -->
             </div>
         </header>
 
-        <main>
-            <div class="shift-tabs">
-                <button class="shift-tab active" data-shift="pagi">
-                    <i class="fas fa-sun"></i> Shift Pagi
-                </button>
-                <button class="shift-tab" data-shift="sore">
-                    <i class="fas fa-cloud-sun"></i> Shift Sore
-                </button>
-                <button class="shift-tab" data-shift="malam">
-                    <i class="fas fa-moon"></i> Shift Malam
-                </button>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value total-stat" id="totalStaff">0</div>
+                <div class="stat-label">Total Staff</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-value present-stat" id="presentStaff">0</div>
+                <div class="stat-label">Hadir</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value absent-stat" id="absentStaff">0</div>
+                <div class="stat-label">Belum Absen</div>
+            </div>
+        </div>
 
-            <div id="staff-container" class="staff-grid">
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
+        <div class="shift-info">
+            <div class="shift-title" id="currentShiftTitle">Shift Pagi</div>
+            <div class="shift-time" id="currentShiftTime">07:00 - 15:00</div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="shift-pagi">Shift Pagi</div>
+            <div class="tab" data-tab="shift-sore">Shift Sore</div>
+            <div class="tab" data-tab="shift-malam">Shift Malam</div>
+        </div>
+
+        <div class="tab-content active" id="shift-pagi">
+            <div class="staff-list" id="staff-list-pagi">
+                <!-- Staff cards for shift pagi will be inserted here -->
             </div>
-        </main>
+        </div>
+
+        <div class="tab-content" id="shift-sore">
+            <div class="staff-list" id="staff-list-sore">
+                <!-- Staff cards for shift sore will be inserted here -->
+            </div>
+        </div>
+
+        <div class="tab-content" id="shift-malam">
+            <div class="staff-list" id="staff-list-malam">
+                <!-- Staff cards for shift malam will be inserted here -->
+            </div>
+        </div>
 
         <footer>
-            <p>&copy; 2023 Sistem Absensi Staff. All rights reserved.</p>
+            <p>© 2023 Sistem Absensi Staff. All rights reserved.</p>
         </footer>
     </div>
 
-    <div id="notification" class="notification">
-        <i class="fas fa-check-circle"></i>
-        <span id="notification-message">Notification message</span>
+    <div class="notification" id="notification">
+        <!-- Notification content -->
     </div>
 
     <script>
-        // GANTI DENGAN WEB APP URL ANDA DARI GOOGLE APPS SCRIPT
-        const SCRIPT_URL = 'YOUR_WEB_APP_URL';
+        // Data contoh - nanti akan diganti dengan data dari Google Sheets
+        const staffData = {
+            'shift-pagi': [
+                { id: 1, name: 'Ahmad Rizki', position: 'Manager', status: 'present', time: '07:15' },
+                { id: 2, name: 'Siti Nurhaliza', position: 'Supervisor', status: 'present', time: '07:05' },
+                { id: 3, name: 'Budi Santoso', position: 'Staff IT', status: 'absent', time: '' },
+                { id: 4, name: 'Maya Sari', position: 'HR Staff', status: 'present', time: '07:20' },
+                { id: 5, name: 'Rizky Pratama', position: 'Admin', status: 'absent', time: '' },
+                { id: 6, name: 'Dewi Lestari', position: 'Marketing', status: 'present', time: '07:10' }
+            ],
+            'shift-sore': [
+                { id: 7, name: 'Fajar Nugroho', position: 'Manager', status: 'absent', time: '' },
+                { id: 8, name: 'Indah Permata', position: 'Supervisor', status: 'absent', time: '' },
+                { id: 9, name: 'Hendra Wijaya', position: 'Staff IT', status: 'absent', time: '' },
+                { id: 10, name: 'Lia Amelia', position: 'HR Staff', status: 'absent', time: '' }
+            ],
+            'shift-malam': [
+                { id: 11, name: 'Rudi Hartono', position: 'Manager', status: 'absent', time: '' },
+                { id: 12, name: 'Sari Indah', position: 'Supervisor', status: 'absent', time: '' },
+                { id: 13, name: 'Joko Susilo', position: 'Security', status: 'absent', time: '' }
+            ]
+        };
 
-        // Current active shift
-        let currentShift = 'pagi';
-
-        // Staff data
-        let staffData = [];
-
-        // Initialize the app
+        // Inisialisasi aplikasi
         document.addEventListener('DOMContentLoaded', function() {
             updateDateTime();
             setInterval(updateDateTime, 1000);
             
-            // Setup shift tabs
-            document.querySelectorAll('.shift-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    document.querySelectorAll('.shift-tab').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    currentShift = this.getAttribute('data-shift');
-                    loadStaffData();
-                });
-            });
-            
-            // Load initial data
             loadStaffData();
+            setupTabs();
+            updateStats();
         });
 
-        // Update date and time
+        // Fungsi untuk memperbarui tanggal dan waktu
         function updateDateTime() {
             const now = new Date();
-            const options = {
-                timeZone: 'Asia/Jakarta',
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit'
             };
-            
-            const dateTimeString = now.toLocaleString('id-ID', options);
-            document.getElementById('datetime').textContent = dateTimeString;
+            document.getElementById('currentDateTime').textContent = now.toLocaleDateString('id-ID', options);
         }
 
-        // Load staff data from Google Sheets via Apps Script
-        async function loadStaffData() {
-            const container = document.getElementById('staff-container');
-            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-            
-            try {
-                const url = `${SCRIPT_URL}?action=getStaff&shift=${currentShift}`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Network response was not ok.');
+        // Fungsi untuk memuat data staff
+        function loadStaffData() {
+            for (const shift in staffData) {
+                const staffList = document.getElementById(`staff-list-${shift.split('-')[1]}`);
+                staffList.innerHTML = '';
                 
-                const result = await response.json();
-                
-                if (result.status !== 'success') {
-                    throw new Error(result.message || 'Failed to fetch data');
-                }
-                
-                staffData = result.data;
-                
-                if (staffData.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-users-slash"></i>
-                            <h3>Tidak ada data staff</h3>
-                            <p>Tidak ada staff yang tersedia untuk shift ${currentShift}</p>
+                staffData[shift].forEach(staff => {
+                    const staffCard = document.createElement('div');
+                    staffCard.className = `staff-card ${staff.status}`;
+                    
+                    staffCard.innerHTML = `
+                        <div class="staff-name">${staff.name}</div>
+                        <div class="staff-position">${staff.position}</div>
+                        <div class="staff-status ${staff.status === 'present' ? 'status-present' : 'status-absent'}">
+                            ${staff.status === 'present' ? 'Sudah Absen' : 'Belum Absen'}
                         </div>
+                        <button class="action-btn ${staff.status === 'present' ? 'absent' : ''}" 
+                                data-id="${staff.id}" data-shift="${shift}">
+                            <i class="fas ${staff.status === 'present' ? 'fa-undo' : 'fa-check'}"></i>
+                            ${staff.status === 'present' ? 'Batalkan' : 'Absen Sekarang'}
+                        </button>
+                        ${staff.status === 'present' ? `<div class="time-info">Waktu: ${staff.time}</div>` : ''}
                     `;
-                    return;
-                }
-                
-                renderStaffCards();
-            } catch (error) {
-                console.error('Error loading staff data:', error);
-                showNotification('Gagal memuat data staff. Silakan coba lagi.', 'error');
-                
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Terjadi Kesalahan</h3>
-                        <p>Gagal memuat data staff. Periksa koneksi dan URL Apps Script Anda.</p>
-                    </div>
-                `;
+                    
+                    staffList.appendChild(staffCard);
+                });
             }
-        }
-
-        // Render staff cards
-        function renderStaffCards() {
-            const container = document.getElementById('staff-container');
-            container.innerHTML = '';
             
-            staffData.forEach(staff => {
-                const card = createStaffCard(staff);
-                container.appendChild(card);
+            // Tambahkan event listener untuk tombol absen
+            document.querySelectorAll('.action-btn').forEach(button => {
+                button.addEventListener('click', handleAbsence);
             });
         }
 
-        // Create a staff card element
-        function createStaffCard(staff) {
-            const card = document.createElement('div');
-            card.className = 'staff-card';
+        // Fungsi untuk menangani absensi
+        function handleAbsence(event) {
+            const button = event.currentTarget;
+            const staffId = parseInt(button.getAttribute('data-id'));
+            const shift = button.getAttribute('data-shift');
             
-            const initials = staff.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            const hasCheckedIn = staff.status !== null && staff.status !== '';
+            // Cari staff berdasarkan ID dan shift
+            const staff = staffData[shift].find(s => s.id === staffId);
             
-            card.innerHTML = `
-                <div class="staff-header">
-                    <div class="staff-avatar">${initials}</div>
-                    <div class="staff-name">${staff.name}</div>
-                    <div class="staff-position">${staff.position}</div>
-                </div>
-                <div class="staff-body">
-                    <div class="status-badge ${hasCheckedIn ? 'status-present' : 'status-absent'}">
-                        ${hasCheckedIn ? 'Sudah Absen' : 'Belum Absen'}
-                    </div>
-                    <div class="attendance-time">
-                        ${hasCheckedIn ? `Waktu: ${staff.status}` : 'Belum ada waktu absensi'}
-                    </div>
-                    <button class="attendance-btn" ${hasCheckedIn ? 'disabled' : ''} 
-                            onclick="checkIn(${staff.id})">
-                        ${hasCheckedIn ? 'Sudah Absen' : 'Absen Sekarang'}
-                    </button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        // Check in staff
-        async function checkIn(staffId) {
-            const staff = staffData.find(s => s.id === staffId);
-            if (!staff) return;
-            
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('id-ID', { 
-                timeZone: 'Asia/Jakarta',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            
-            try {
-                const url = `${SCRIPT_URL}?action=checkIn&id=${staffId}&time=${encodeURIComponent(timeString)}`;
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                if (result.status !== 'success') {
-                    throw new Error(result.message || 'Failed to check in');
+            if (staff) {
+                if (staff.status === 'absent') {
+                    // Absen staff
+                    staff.status = 'present';
+                    staff.time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    
+                    showNotification(`${staff.name} berhasil melakukan absensi`, 'success');
+                } else {
+                    // Batalkan absen
+                    staff.status = 'absent';
+                    staff.time = '';
+                    
+                    showNotification(`Absensi ${staff.name} dibatalkan`, 'error');
                 }
                 
-                showNotification(`${staff.name} berhasil absen pada pukul ${timeString}`, 'success');
-                loadStaffData(); // Refresh data to show updated status
-            } catch (error) {
-                console.error('Error checking in:', error);
-                showNotification('Gagal melakukan absensi. Silakan coba lagi.', 'error');
+                // Perbarui UI
+                loadStaffData();
+                updateStats();
+                
+                // Di sini akan ada kode untuk mengirim data ke Google Sheets
+                // updateGoogleSheets(staff);
             }
         }
 
-        // Show notification
-        function showNotification(message, type = 'success') {
+        // Fungsi untuk mengatur tab
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Hapus kelas active dari semua tab dan konten
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Tambahkan kelas active ke tab yang diklik
+                    this.classList.add('active');
+                    
+                    // Tampilkan konten yang sesuai
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Perbarui info shift
+                    updateShiftInfo(tabId);
+                });
+            });
+        }
+
+        // Fungsi untuk memperbarui info shift
+        function updateShiftInfo(shiftId) {
+            const shiftTitle = document.getElementById('currentShiftTitle');
+            const shiftTime = document.getElementById('currentShiftTime');
+            
+            switch(shiftId) {
+                case 'shift-pagi':
+                    shiftTitle.textContent = 'Shift Pagi';
+                    shiftTime.textContent = '07:00 - 15:00';
+                    break;
+                case 'shift-sore':
+                    shiftTitle.textContent = 'Shift Sore';
+                    shiftTime.textContent = '15:00 - 23:00';
+                    break;
+                case 'shift-malam':
+                    shiftTitle.textContent = 'Shift Malam';
+                    shiftTime.textContent = '23:00 - 07:00';
+                    break;
+            }
+        }
+
+        // Fungsi untuk memperbarui statistik
+        function updateStats() {
+            let total = 0;
+            let present = 0;
+            
+            for (const shift in staffData) {
+                total += staffData[shift].length;
+                present += staffData[shift].filter(staff => staff.status === 'present').length;
+            }
+            
+            document.getElementById('totalStaff').textContent = total;
+            document.getElementById('presentStaff').textContent = present;
+            document.getElementById('absentStaff').textContent = total - present;
+        }
+
+        // Fungsi untuk menampilkan notifikasi
+        function showNotification(message, type) {
             const notification = document.getElementById('notification');
-            const messageElement = document.getElementById('notification-message');
-            const icon = notification.querySelector('i');
-            
-            messageElement.textContent = message;
-            notification.className = `notification ${type}`;
-            
-            if (type === 'success') {
-                icon.className = 'fas fa-check-circle';
-            } else {
-                icon.className = 'fas fa-exclamation-circle';
-            }
-            
-            notification.classList.add('show');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
             
             setTimeout(() => {
                 notification.classList.remove('show');
-            }, 5000);
+            }, 3000);
+        }
+
+        // Fungsi untuk mengambil data dari Google Sheets
+        // Ini adalah placeholder untuk integrasi dengan Google Sheets
+        async function fetchDataFromGoogleSheets() {
+            try {
+                // URL Google Sheets Anda
+                const sheetId = '1k5U_YwloyQsad7PT_DmXobkNycJ6bsV0zhE00TLmSIg';
+                const range = 'Sheet1'; // Ganti dengan nama sheet yang sesuai
+                
+                // Menggunakan Google Sheets API v4
+                // Anda perlu mengatur API key atau OAuth untuk akses
+                const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=YOUR_API_KEY`);
+                
+                if (!response.ok) {
+                    throw new Error('Gagal mengambil data dari Google Sheets');
+                }
+                
+                const data = await response.json();
+                
+                // Proses data dari Google Sheets
+                // Format data: kolom A (Shift Pagi), E (Shift Sore), I (Shift Malam)
+                // Kolom N (NAMA), O (JABATAN), P (STATUS)
+                
+                // Reset data staff
+                staffData['shift-pagi'] = [];
+                staffData['shift-sore'] = [];
+                staffData['shift-malam'] = [];
+                
+                // Proses data dari Google Sheets
+                // Contoh implementasi:
+                // data.values.forEach((row, index) => {
+                //     if (index === 0) return; // Skip header
+                //     
+                //     // Ambil data untuk shift pagi (kolom A)
+                //     if (row[0]) {
+                //         staffData['shift-pagi'].push({
+                //             id: index * 3 - 2,
+                //             name: row[13] || 'Nama tidak tersedia', // Kolom N
+                //             position: row[14] || 'Jabatan tidak tersedia', // Kolom O
+                //             status: row[15] === 'Hadir' ? 'present' : 'absent', // Kolom P
+                //             time: row[15] === 'Hadir' ? new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''
+                //         });
+                //     }
+                //     
+                //     // Ambil data untuk shift sore (kolom E)
+                //     if (row[4]) {
+                //         staffData['shift-sore'].push({
+                //             id: index * 3 - 1,
+                //             name: row[13] || 'Nama tidak tersedia',
+                //             position: row[14] || 'Jabatan tidak tersedia',
+                //             status: row[15] === 'Hadir' ? 'present' : 'absent',
+                //             time: row[15] === 'Hadir' ? new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''
+                //         });
+                //     }
+                //     
+                //     // Ambil data untuk shift malam (kolom I)
+                //     if (row[8]) {
+                //         staffData['shift-malam'].push({
+                //             id: index * 3,
+                //             name: row[13] || 'Nama tidak tersedia',
+                //             position: row[14] || 'Jabatan tidak tersedia',
+                //             status: row[15] === 'Hadir' ? 'present' : 'absent',
+                //             time: row[15] === 'Hadir' ? new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''
+                //         });
+                //     }
+                // });
+                
+                // Perbarui UI dengan data baru
+                loadStaffData();
+                updateStats();
+                
+            } catch (error) {
+                console.error('Error mengambil data dari Google Sheets:', error);
+                showNotification('Gagal mengambil data dari Google Sheets', 'error');
+            }
+        }
+
+        // Fungsi untuk memperbarui Google Sheets
+        // Ini adalah placeholder untuk integrasi dengan Google Sheets
+        async function updateGoogleSheets(staff) {
+            try {
+                // URL Google Sheets Anda
+                const sheetId = '1k5U_YwloyQsad7PT_DmXobkNycJ6bsV0zhE00TLmSIg';
+                
+                // Data yang akan dikirim
+                const data = {
+                    values: [
+                        [staff.name, staff.position, staff.status === 'present' ? 'Hadir' : 'Tidak Hadir', new Date().toLocaleString('id-ID')]
+                    ]
+                };
+                
+                // Menggunakan Google Sheets API v4
+                // Anda perlu mengatur API key atau OAuth untuk akses
+                const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!N2:append?valueInputOption=RAW&key=YOUR_API_KEY`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Gagal mengirim data ke Google Sheets');
+                }
+                
+                console.log('Data berhasil dikirim ke Google Sheets');
+                
+            } catch (error) {
+                console.error('Error mengirim data ke Google Sheets:', error);
+                showNotification('Gagal mengirim data ke Google Sheets', 'error');
+            }
         }
     </script>
 </body>
