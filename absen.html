@@ -545,7 +545,7 @@
     
     // Ganti dengan URL Web App dari Google Apps Script Anda
     // GANTI BAGIAN INI DENGAN URL WEB APP ANDA
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3V2y6eQhK1n4v8jL9wXqR7zP5sT6uV8wY9zX2qR7b/exec';
+    const SCRIPT_URL = 'GANTI_DENGAN_URL_WEB_APP_ANDA'; // <--- PASTIKAN ANDA MENGUBAH INI
 
     // Variabel global
     let staffData = [];
@@ -616,41 +616,59 @@
       const now = new Date();
       const today = now.toDateString();
       
-      // Jika ini hari baru dan belum reset hari ini
       if (lastResetDate !== today && now.getHours() === 0 && now.getMinutes() < 5) {
-        resetAttendance(true); // Reset otomatis
+        resetAttendance(true);
         lastResetDate = today;
       }
     }
 
-    // Fungsi utama untuk memuat data dari Google Sheets
+    // Fungsi utama untuk memuat data dari Google Sheets dengan logging yang lebih baik
     async function loadInitialData(isSilent = false) {
+      console.log("loadInitialData called. isSilent:", isSilent);
       if (!isSilent) {
         showLoading(true);
         setSyncStatus('syncing');
       }
       
       try {
+        console.log("Attempting to fetch CSV from:", API_URL);
         const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Gagal mengambil data dari Google Sheets');
-        const csvData = await response.text();
+        console.log("Fetch response received. Status:", response.status, response.statusText);
+
+        if (!response.ok) {
+          console.error("Fetch failed. Response:", response);
+          throw new Error(`Gagal mengambil data dari Google Sheets. Status: ${response.status} ${response.statusText}`);
+        }
         
-        // Parse CSV dan dapatkan headers serta data
+        const csvData = await response.text();
+        console.log("CSV data received. Length:", csvData.length);
+        console.log("First 200 chars of CSV:", csvData.substring(0, 200));
+        
+        if (csvData.trim() === '') {
+            throw new Error("Data CSV kosong. Pastikan sheet memiliki data.");
+        }
+        
         const parsedData = parseCSV(csvData);
+        console.log("Parsed data:", parsedData);
+
+        if (parsedData.headers.length === 0 || parsedData.data.length === 0) {
+            throw new Error("Gagal mem-parsing CSV atau data tidak valid.");
+        }
+
         sheetHeaders = parsedData.headers;
         staffData = parsedData.data;
 
-        // Tetapkan header untuk fungsi kunci
-        idHeader = sheetHeaders[0]; // Asumsi kolom pertama adalah ID
-        nameHeader = sheetHeaders[1]; // Asumsi kolom kedua adalah Nama
-        statusHeader = sheetHeaders[3]; // Asumsi kolom keempat adalah Status
-        timeHeader = sheetHeaders[4]; // Asumsi kolom kelima adalah Waktu
+        idHeader = sheetHeaders[0];
+        nameHeader = sheetHeaders[1];
+        statusHeader = sheetHeaders[3];
+        timeHeader = sheetHeaders[4];
+        
+        console.log("Headers identified:", { idHeader, nameHeader, statusHeader, timeHeader });
 
         renderTable();
         renderStaffSelect();
         updateDashboard();
         
-        // Update waktu sinkronisasi terakhir
         lastSyncTime = new Date();
         updateLastSyncTime();
         
@@ -661,13 +679,13 @@
           setSyncStatus('synced');
         }
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error("!!! ERROR in loadInitialData !!!", error);
         if (!isSilent) {
           showLoading(false);
-          showToast('Gagal memuat data. Pastikan Sheet sudah dipublikasikan.', 'error');
+          showToast(`Gagal memuat data: ${error.message}`, 'error');
           setSyncStatus('error');
         }
-        loadLocalData(); // Fallback
+        // Jangan loadLocalData() agar kita tahu ada masalah
       }
     }
 
@@ -692,21 +710,6 @@
       return { headers, data };
     }
     
-    // Fungsi fallback untuk memuat data lokal
-    function loadLocalData() {
-      sheetHeaders = ["id", "nama", "jabatan", "status", "waktu"];
-      idHeader = sheetHeaders[0]; nameHeader = sheetHeaders[1]; statusHeader = sheetHeaders[3]; timeHeader = sheetHeaders[4];
-      staffData = [
-        { [idHeader]: "001", [nameHeader]: "Ahmad Rizki", "jabatan": "Manager", [statusHeader]: "Sudah Absen", [timeHeader]: "08:15:32" },
-        { [idHeader]: "002", [nameHeader]: "Siti Nurhaliza", "jabatan": "Supervisor", [statusHeader]: "Sudah Absen", [timeHeader]: "08:22:45" },
-        { [idHeader]: "003", [nameHeader]: "Budi Santoso", "jabatan": "Staff Admin", [statusHeader]: "Belum Absen", [timeHeader]: "-" },
-      ];
-      renderTable();
-      renderStaffSelect();
-      updateDashboard();
-      animateElements();
-    }
-
     function animateElements() {
       const cards = document.querySelectorAll('.card, .stat-card');
       cards.forEach((card, index) => {
@@ -720,10 +723,8 @@
       const thead = elements.tableHead;
       const tbody = elements.attendanceBody;
 
-      // Render Header
       thead.innerHTML = `<tr>${sheetHeaders.map(header => `<th>${header}</th>`).join('')}</tr>`;
 
-      // Render Body
       if (data.length === 0) {
         tbody.innerHTML = `<tr><td colspan="${sheetHeaders.length}" style="text-align: center; color: var(--gray);"><i class="fas fa-info-circle"></i> Tidak ada data</td></tr>`;
         return;
@@ -740,7 +741,6 @@
           let cellContent = staff[header] || '-';
           let cellClass = '';
 
-          // Berikan style khusus untuk kolom status dan waktu
           if (header === statusHeader) {
             const statusClass = staff[header] === 'Sudah Absen' ? 'present' : 'absent';
             const icon = staff[header] === 'Sudah Absen' ? 'fa-check' : 'fa-clock';
@@ -811,7 +811,7 @@
       }, 30);
     }
 
-    // Fungsi untuk mencatat absensi dengan perbaikan sinkronisasi
+    // Fungsi untuk mencatat absensi
     async function markAttendance() {
       if (isProcessing) return;
       const selectedOption = elements.staffSelect.options[elements.staffSelect.selectedIndex];
@@ -838,22 +838,15 @@
       const waktuAbsen = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
       
       try {
-        // Panggil API untuk update data di Google Sheets
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            function: 'updateAttendance",
-            staffId: staffId,
-            status: 'Sudah Absen',
-            time: waktuAbsen
+            function: "updateAttendance", staffId: staffId, status: "Sudah Absen", time: waktuAbsen
           }),
-          mode: 'no-cors' // Menggunakan mode no-cors
+          mode: 'no-cors'
         });
         
-        // Update data lokal sebagai feedback instan
         const staffIndex = staffData.findIndex(s => s[idHeader] === staffId);
         if (staffIndex !== -1) {
           staffData[staffIndex][statusHeader] = 'Sudah Absen';
@@ -866,10 +859,7 @@
         
         showToast(`Absen berhasil! ${staffName} - ${waktuAbsen}`, 'success');
         
-        // Setelah 2 detik, refresh data dari server untuk memastikan sinkronisasi
-        setTimeout(() => {
-          loadInitialData(true);
-        }, 2000);
+        setTimeout(() => { loadInitialData(true); }, 2000);
       } catch (error) {
         console.error('Error marking attendance:', error);
         showToast('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.', 'error');
@@ -879,31 +869,22 @@
       }
     }
 
-    // Fungsi untuk mereset data absensi dengan perbaikan sinkronisasi
+    // Fungsi untuk mereset data absensi
     async function resetAttendance(isAutomatic = false) {
       if (!isAutomatic) {
-        // Konfirmasi reset manual
-        if (!confirm('Apakah Anda yakin ingin mereset semua data absensi?')) {
-          return;
-        }
+        if (!confirm('Apakah Anda yakin ingin mereset semua data absensi?')) return;
       }
       
       showLoading(true);
       
       try {
-        // Panggil API untuk reset data di Google Sheets
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            function: 'resetAttendance'
-          }),
-          mode: 'no-cors' // Menggunakan mode no-cors
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ function: "resetAttendance" }),
+          mode: 'no-cors'
         });
         
-        // Update data lokal sebagai feedback instan
         staffData.forEach(staff => {
           staff[statusHeader] = 'Belum Absen';
           staff[timeHeader] = '-';
@@ -919,10 +900,7 @@
           showToast('Data absensi berhasil direset', 'success');
         }
         
-        // Setelah 2 detik, refresh data dari server untuk memastikan sinkronisasi
-        setTimeout(() => {
-          loadInitialData(true);
-        }, 2000);
+        setTimeout(() => { loadInitialData(true); }, 2000);
       } catch (error) {
         console.error('Error resetting attendance:', error);
         showToast('Terjadi kesalahan saat mereset data. Silakan coba lagi.', 'error');
@@ -931,7 +909,6 @@
       }
     }
 
-    // Fungsi untuk mengatur status sinkronisasi
     function setSyncStatus(status) {
       const indicator = elements.syncIndicator;
       indicator.className = 'sync-indicator';
@@ -948,7 +925,6 @@
       }
     }
 
-    // Fungsi untuk update waktu sinkronisasi terakhir
     function updateLastSyncTime() {
       if (lastSyncTime) {
         const hours = String(lastSyncTime.getHours()).padStart(2, '0');
