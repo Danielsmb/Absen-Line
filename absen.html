@@ -347,25 +347,12 @@
       transform: translateX(-50%) translateY(-10px);
     }
 
-    .toast.success {
-      border-left: 5px solid var(--success);
-    }
+    .toast.success { border-left: 5px solid var(--success); }
+    .toast.error { border-left: 5px solid var(--danger); }
+    .toast.warning { border-left: 5px solid var(--warning); }
+    .toast.info { border-left: 5px solid var(--secondary); }
 
-    .toast.error {
-      border-left: 5px solid var(--danger);
-    }
-
-    .toast.warning {
-      border-left: 5px solid var(--warning);
-    }
-
-    .toast.info {
-      border-left: 5px solid var(--secondary);
-    }
-
-    .toast i {
-      font-size: 1.2rem;
-    }
+    .toast i { font-size: 1.2rem; }
 
     .highlight-change {
       animation: highlight-fade 2s ease-out;
@@ -399,25 +386,12 @@
     }
 
     @media (max-width: 768px) {
-      .container {
-        padding: 15px;
-      }
-      .header h1 {
-        font-size: 1.8rem;
-      }
-      .dashboard {
-        grid-template-columns: 1fr;
-      }
-      .card {
-        padding: 20px;
-      }
-      th, td {
-        padding: 10px 8px;
-        font-size: 0.8rem;
-      }
-      .mobile-hidden {
-        display: none;
-      }
+      .container { padding: 15px; }
+      .header h1 { font-size: 1.8rem; }
+      .dashboard { grid-template-columns: 1fr; }
+      .card { padding: 20px; }
+      th, td { padding: 10px 8px; font-size: 0.8rem; }
+      .mobile-hidden { display: none; }
     }
 
     @keyframes pop {
@@ -425,23 +399,10 @@
       100% { transform: scale(1); opacity: 1; }
     }
 
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(0,0,0,0.1);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--primary);
-      border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--primary-light);
-    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+    ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
   </style>
 </head>
 <body>
@@ -493,23 +454,21 @@
       <h2><i class="fas fa-list-ol"></i> Rekap Absensi Hari Ini</h2>
       <div class="form-group">
         <label for="staffSearch"><i class="fas fa-search"></i> Cari Data Staff</label>
-        <input type="text" id="staffSearch" class="form-control" placeholder="Ketik nama atau jabatan...">
+        <input type="text" id="staffSearch" class="form-control" placeholder="Ketik untuk mencari...">
       </div>
       <div class="table-responsive">
         <table id="attendanceTable">
-          <thead>
+          <thead id="tableHead">
             <tr>
-              <th class="mobile-hidden">ID</th>
-              <th>Nama</th>
-              <th class="mobile-hidden">Jabatan</th>
-              <th>Status</th>
-              <th>Waktu Absen</th>
+              <td colspan="5" style="text-align: center; color: var(--gray);">
+                <div class="small-spinner"></div>
+              </td>
             </tr>
           </thead>
           <tbody id="attendanceBody">
             <tr>
-              <td colspan="5" style="text-align: center;">
-                <div class="small-spinner"></div>
+              <td colspan="5" style="text-align: center; color: var(--gray);">
+                Menunggu data...
               </td>
             </tr>
           </tbody>
@@ -532,7 +491,11 @@
 
     // Variabel global
     let staffData = [];
+    let sheetHeaders = []; // Akan menyimpan header dari sheet
     let isProcessing = false;
+
+    // Asumsi nama kolom untuk fungsi spesifik
+    let idHeader, nameHeader, statusHeader, timeHeader;
 
     // Cache elemen DOM
     const elements = {
@@ -541,6 +504,7 @@
       staffSelect: document.getElementById('staffSelect'),
       submitBtn: document.getElementById('submitBtn'),
       attendanceBody: document.getElementById('attendanceBody'),
+      tableHead: document.getElementById('tableHead'),
       totalStaff: document.getElementById('totalStaff'),
       presentCount: document.getElementById('presentCount'),
       absentCount: document.getElementById('absentCount'),
@@ -563,36 +527,34 @@
     // Fungsi untuk update jam dan tanggal
     function updateClock() {
       const now = new Date();
-      elements.currentDate.innerHTML =
-        `<i class="far fa-calendar-alt"></i> ${now.toLocaleDateString('id-ID', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })}`;
+      elements.currentDate.innerHTML = `<i class="far fa-calendar-alt"></i> ${now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      elements.currentTime.innerHTML =
-        `<i class="far fa-clock"></i> ${hours}:${minutes}:${seconds} WIB`;
+      elements.currentTime.innerHTML = `<i class="far fa-clock"></i> ${hours}:${minutes}:${seconds} WIB`;
     }
 
     // Fungsi utama untuk memuat data dari Google Sheets
     async function loadInitialData() {
       showLoading(true);
-      
       try {
-        // Fetch data dari Google Sheets
         const response = await fetch(API_URL);
-        if (!response.ok) {
-          throw new Error('Gagal mengambil data dari Google Sheets');
-        }
-        
+        if (!response.ok) throw new Error('Gagal mengambil data dari Google Sheets');
         const csvData = await response.text();
-        staffData = parseCSV(csvData);
         
-        renderStaffSelect();
+        // Parse CSV dan dapatkan headers serta data
+        const parsedData = parseCSV(csvData);
+        sheetHeaders = parsedData.headers;
+        staffData = parsedData.data;
+
+        // Tetapkan header untuk fungsi kunci
+        idHeader = sheetHeaders[0]; // Asumsi kolom pertama adalah ID
+        nameHeader = sheetHeaders[1]; // Asumsi kolom kedua adalah Nama
+        statusHeader = sheetHeaders[3]; // Asumsi kolom keempat adalah Status
+        timeHeader = sheetHeaders[4]; // Asumsi kolom kelima adalah Waktu
+
         renderTable();
+        renderStaffSelect();
         updateDashboard();
         showLoading(false);
         animateElements();
@@ -600,22 +562,22 @@
       } catch (error) {
         console.error('Error loading data:', error);
         showLoading(false);
-        showToast('Gagal memuat data. Menggunakan data lokal.', 'error');
-        
-        // Fallback ke data lokal jika gagal mengambil data dari Google Sheets
-        loadLocalData();
+        showToast('Gagal memuat data. Pastikan Sheet sudah dipublikasikan.', 'error');
+        loadLocalData(); // Fallback
       }
     }
 
-    // Fungsi untuk parsing CSV
+    // Fungsi untuk parsing CSV secara dinamis
     function parseCSV(csvText) {
       const lines = csvText.split('\n').filter(line => line.trim() !== '');
+      if (lines.length === 0) return { headers: [], data: [] };
+
       const headers = lines[0].split(',').map(header => header.trim());
-      
       const data = [];
+
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(value => value.trim());
-        if (values.length >= headers.length) {
+        if (values.length === headers.length) {
           const row = {};
           headers.forEach((header, index) => {
             row[header] = values[index];
@@ -623,26 +585,20 @@
           data.push(row);
         }
       }
-      
-      return data;
+      return { headers, data };
     }
-
+    
     // Fungsi fallback untuk memuat data lokal
     function loadLocalData() {
-      const mockStaffData = [
-        { id: "001", nama: "Ahmad Rizki", jabatan: "Manager", status: "Sudah Absen", waktu: "08:15:32" },
-        { id: "002", nama: "Siti Nurhaliza", jabatan: "Supervisor", status: "Sudah Absen", waktu: "08:22:45" },
-        { id: "003", nama: "Budi Santoso", jabatan: "Staff Admin", status: "Belum Absen", waktu: "-" },
-        { id: "004", nama: "Dewi Lestari", jabatan: "Staff IT", status: "Sudah Absen", waktu: "08:30:12" },
-        { id: "005", nama: "Eko Prasetyo", jabatan: "Staff HR", status: "Belum Absen", waktu: "-" },
-        { id: "006", nama: "Fitri Handayani", jabatan: "Staff Finance", status: "Sudah Absen", waktu: "08:45:20" },
-        { id: "007", nama: "Gunawan Wijaya", jabatan: "Staff Marketing", status: "Belum Absen", waktu: "-" },
-        { id: "008", nama: "Hesti Permata", jabatan: "Staff Operasional", status: "Sudah Absen", waktu: "09:05:15" }
+      sheetHeaders = ["id", "nama", "jabatan", "status", "waktu"];
+      idHeader = sheetHeaders[0]; nameHeader = sheetHeaders[1]; statusHeader = sheetHeaders[3]; timeHeader = sheetHeaders[4];
+      staffData = [
+        { [idHeader]: "001", [nameHeader]: "Ahmad Rizki", "jabatan": "Manager", [statusHeader]: "Sudah Absen", [timeHeader]: "08:15:32" },
+        { [idHeader]: "002", [nameHeader]: "Siti Nurhaliza", "jabatan": "Supervisor", [statusHeader]: "Sudah Absen", [timeHeader]: "08:22:45" },
+        { [idHeader]: "003", [nameHeader]: "Budi Santoso", "jabatan": "Staff Admin", [statusHeader]: "Belum Absen", [timeHeader]: "-" },
       ];
-      
-      staffData = [...mockStaffData];
-      renderStaffSelect();
       renderTable();
+      renderStaffSelect();
       updateDashboard();
       animateElements();
     }
@@ -655,34 +611,17 @@
       });
     }
 
-    // Render dropdown staff
-    function renderStaffSelect() {
-      const select = elements.staffSelect;
-      select.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
-      
-      staffData.forEach(staff => {
-        const option = document.createElement('option');
-        option.value = staff.id;
-        option.textContent = `${staff.nama} (${staff.jabatan || 'Tanpa Jabatan'})`;
-        if (staff.status === 'Belum Absen') {
-          option.style.color = '#4caf50';
-          option.style.fontWeight = '500';
-        }
-        select.appendChild(option);
-      });
-    }
-
-    // Render tabel absensi
+    // Render tabel absensi secara dinamis
     function renderTable(data = staffData) {
+      const thead = elements.tableHead;
       const tbody = elements.attendanceBody;
+
+      // Render Header
+      thead.innerHTML = `<tr>${sheetHeaders.map(header => `<th>${header}</th>`).join('')}</tr>`;
+
+      // Render Body
       if (data.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="5" style="text-align: center; color: var(--gray);">
-              <i class="fas fa-info-circle"></i> Tidak ada data absensi
-            </td>
-          </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="${sheetHeaders.length}" style="text-align: center; color: var(--gray);"><i class="fas fa-info-circle"></i> Tidak ada data</td></tr>`;
         return;
       }
 
@@ -692,16 +631,42 @@
         row.style.animationDelay = `${index * 0.05}s`;
         row.classList.add('animate-pop');
         
-        row.innerHTML = `
-          <td class="mobile-hidden">${staff.id}</td>
-          <td>${staff.nama}</td>
-          <td class="mobile-hidden">${staff.jabatan || '-'}</td>
-          <td><span class="status ${staff.status === 'Sudah Absen' ? 'present' : 'absent'}">
-            ${staff.status} <i class="fas ${staff.status === 'Sudah Absen' ? 'fa-check' : 'fa-clock'}"></i>
-          </span></td>
-          <td class="time-format">${staff.waktu}</td>
-        `;
+        let cellsHtml = '';
+        sheetHeaders.forEach(header => {
+          let cellContent = staff[header] || '-';
+          let cellClass = '';
+
+          // Berikan style khusus untuk kolom status dan waktu
+          if (header === statusHeader) {
+            const statusClass = staff[header] === 'Sudah Absen' ? 'present' : 'absent';
+            const icon = staff[header] === 'Sudah Absen' ? 'fa-check' : 'fa-clock';
+            cellContent = `<span class="status ${statusClass}">${staff[header]} <i class="fas ${icon}"></i></span>`;
+          } else if (header === timeHeader) {
+            cellClass = 'time-format';
+          }
+          
+          cellsHtml += `<td class="${cellClass}">${cellContent}</td>`;
+        });
+
+        row.innerHTML = cellsHtml;
         tbody.appendChild(row);
+      });
+    }
+
+    // Render dropdown staff
+    function renderStaffSelect() {
+      const select = elements.staffSelect;
+      select.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
+      
+      staffData.forEach(staff => {
+        const option = document.createElement('option');
+        option.value = staff[idHeader];
+        option.textContent = staff[nameHeader];
+        if (staff[statusHeader] === 'Belum Absen') {
+          option.style.color = '#4caf50';
+          option.style.fontWeight = '500';
+        }
+        select.appendChild(option);
       });
     }
 
@@ -712,38 +677,33 @@
         renderTable();
         return;
       }
-      const filtered = staffData.filter(staff =>
-        staff.nama.toLowerCase().includes(term) ||
-        (staff.jabatan && staff.jabatan.toLowerCase().includes(term)) ||
-        staff.id.toLowerCase().includes(term)
-      );
+      const filtered = staffData.filter(staff => {
+        return Object.values(staff).some(value => 
+          value.toLowerCase().includes(term)
+        );
+      });
       renderTable(filtered);
     }
 
     // Update dashboard statistik
     function updateDashboard() {
-      const presentCount = staffData.filter(staff => staff.status === 'Sudah Absen').length;
+      const presentCount = staffData.filter(staff => staff[statusHeader] === 'Sudah Absen').length;
       const absentCount = staffData.length - presentCount;
 
-      elements.totalStaff.textContent = staffData.length;
-      elements.presentCount.textContent = presentCount;
-      elements.absentCount.textContent = absentCount;
       animateCounter(elements.totalStaff, staffData.length);
       animateCounter(elements.presentCount, presentCount);
       animateCounter(elements.absentCount, absentCount);
     }
 
     function animateCounter(element, target) {
-      const current = parseInt(element.textContent);
+      const current = parseInt(element.textContent) || 0;
       if (current === target) return;
       const increment = target > current ? 1 : -1;
       let currentValue = current;
       const timer = setInterval(() => {
         currentValue += increment;
         element.textContent = currentValue;
-        if (currentValue === target) {
-          clearInterval(timer);
-        }
+        if (currentValue === target) clearInterval(timer);
       }, 30);
     }
 
@@ -752,7 +712,7 @@
       if (isProcessing) return;
       const selectedOption = elements.staffSelect.options[elements.staffSelect.selectedIndex];
       const staffId = selectedOption.value?.trim();
-      const staffName = selectedOption.text.split(' (')[0];
+      const staffName = selectedOption.text;
       
       if (!staffId) {
         showToast('⚠️ Silakan pilih nama Anda terlebih dahulu!', 'warning');
@@ -760,9 +720,8 @@
         return;
       }
 
-      // Cek apakah staff sudah absen
-      const staff = staffData.find(s => s.id === staffId);
-      if (staff.status === 'Sudah Absen') {
+      const staff = staffData.find(s => s[idHeader] === staffId);
+      if (staff[statusHeader] === 'Sudah Absen') {
         showToast('⚠️ Anda sudah absen hari ini!', 'warning');
         return;
       }
@@ -771,26 +730,20 @@
       elements.submitBtn.disabled = true;
       elements.submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SEDANG ABSEN...';
 
-      // Simulasi proses absensi
       setTimeout(() => {
-        // Update status staff
         const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        const waktuAbsen = `${hours}:${minutes}:${seconds}`;
+        const waktuAbsen = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         
-        // Update data di array
-        const staffIndex = staffData.findIndex(s => s.id === staffId);
-        staffData[staffIndex].status = 'Sudah Absen';
-        staffData[staffIndex].waktu = waktuAbsen;
+        const staffIndex = staffData.findIndex(s => s[idHeader] === staffId);
+        staffData[staffIndex][statusHeader] = 'Sudah Absen';
+        staffData[staffIndex][timeHeader] = waktuAbsen;
         
-        // Update UI
         renderTable();
         updateDashboard();
         renderStaffSelect();
         
         showToast(`Absen berhasil! ${staffName} - ${waktuAbsen}`, 'success');
+        showToast('Perhatian: Perubahan hanya tersimpan di browser ini, tidak di Google Sheets.', 'info', 5000);
         
         isProcessing = false;
         resetSubmitButton();
@@ -803,31 +756,18 @@
     }
 
     function showLoading(show) {
-      if (show) {
-        elements.loading.style.display = 'flex';
-      } else {
-        elements.loading.style.opacity = '0';
-        setTimeout(() => {
-          elements.loading.style.display = 'none';
-          elements.loading.style.opacity = '1';
-        }, 300);
-      }
+      elements.loading.style.display = show ? 'flex' : 'none';
     }
 
     function showToast(message, type = 'success', duration = 3000) {
       const toast = elements.toast;
-      const icon = type === 'success' ? 'fa-check-circle' :
-        type === 'error' ? 'fa-exclamation-circle' :
-        type === 'warning' ? 'fa-exclamation-triangle' :
-        type === 'info' ? 'fa-bolt' : 'fa-info-circle';
-      toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+      const iconMap = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+      toast.innerHTML = `<i class="fas ${iconMap[type] || 'fa-info-circle'}"></i> ${message}`;
       toast.className = `toast ${type}`;
       toast.classList.add('show');
 
       if (toast.timeoutId) clearTimeout(toast.timeoutId);
-      toast.timeoutId = setTimeout(() => {
-        toast.classList.remove('show');
-      }, duration);
+      toast.timeoutId = setTimeout(() => toast.classList.remove('show'), duration);
     }
   </script>
 </body>
