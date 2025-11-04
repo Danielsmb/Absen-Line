@@ -385,6 +385,15 @@
       transform: rotate(180deg);
     }
 
+    .reset-btn {
+      background: linear-gradient(135deg, var(--danger), #c0392b);
+      margin-top: 10px;
+    }
+
+    .reset-btn:hover {
+      background: linear-gradient(135deg, #e74c3c, var(--danger));
+    }
+
     @media (max-width: 768px) {
       .container { padding: 15px; }
       .header h1 { font-size: 1.8rem; }
@@ -448,6 +457,9 @@
       <button class="btn" id="submitBtn">
         <i class="fas fa-paper-plane"></i> ABSEN
       </button>
+      <button class="btn reset-btn" id="resetBtn">
+        <i class="fas fa-redo"></i> RESET DATA ABSENSI
+      </button>
     </div>
 
     <div class="card animate-pop" style="animation-delay: 0.5s">
@@ -488,11 +500,15 @@
     const SPREADSHEET_ID = '1LFwBDu0JS4VmYP7vtQpLgF7Roa0pWiEAb7jJlahze88';
     const SHEET_GID = '511063901';
     const API_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+    
+    // Ganti dengan URL Web App dari Google Apps Script Anda
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEXAMPLE/exec'; // Ganti dengan URL Web App Anda
 
     // Variabel global
     let staffData = [];
-    let sheetHeaders = []; // Akan menyimpan header dari sheet
+    let sheetHeaders = [];
     let isProcessing = false;
+    let lastResetDate = null;
 
     // Asumsi nama kolom untuk fungsi spesifik
     let idHeader, nameHeader, statusHeader, timeHeader;
@@ -503,6 +519,7 @@
       toast: document.getElementById('toast'),
       staffSelect: document.getElementById('staffSelect'),
       submitBtn: document.getElementById('submitBtn'),
+      resetBtn: document.getElementById('resetBtn'),
       attendanceBody: document.getElementById('attendanceBody'),
       tableHead: document.getElementById('tableHead'),
       totalStaff: document.getElementById('totalStaff'),
@@ -519,8 +536,13 @@
       updateClock();
       setInterval(updateClock, 1000);
       elements.submitBtn.addEventListener('click', markAttendance);
+      elements.resetBtn.addEventListener('click', resetAttendance);
       elements.staffSearch.addEventListener('input', filterStaff);
       elements.refreshBtn.addEventListener('click', loadInitialData);
+      
+      // Periksa reset setiap menit
+      setInterval(checkForMidnightReset, 60000);
+      
       loadInitialData();
     });
 
@@ -532,6 +554,18 @@
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
       elements.currentTime.innerHTML = `<i class="far fa-clock"></i> ${hours}:${minutes}:${seconds} WIB`;
+    }
+
+    // Fungsi untuk memeriksa apakah sudah lewat tengah malam
+    function checkForMidnightReset() {
+      const now = new Date();
+      const today = now.toDateString();
+      
+      // Jika ini hari baru dan belum reset hari ini
+      if (lastResetDate !== today && now.getHours() === 0 && now.getMinutes() < 5) {
+        resetAttendance(true); // Reset otomatis
+        lastResetDate = today;
+      }
     }
 
     // Fungsi utama untuk memuat data dari Google Sheets
@@ -708,7 +742,7 @@
     }
 
     // Fungsi untuk mencatat absensi
-    function markAttendance() {
+    async function markAttendance() {
       if (isProcessing) return;
       const selectedOption = elements.staffSelect.options[elements.staffSelect.selectedIndex];
       const staffId = selectedOption.value?.trim();
@@ -730,24 +764,101 @@
       elements.submitBtn.disabled = true;
       elements.submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SEDANG ABSEN...';
 
-      setTimeout(() => {
-        const now = new Date();
-        const waktuAbsen = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      const now = new Date();
+      const waktuAbsen = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      
+      try {
+        // Panggil API untuk update data di Google Sheets
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            function: 'updateAttendance',
+            staffId: staffId,
+            status: 'Sudah Absen',
+            time: waktuAbsen
+          }),
+          mode: 'cors' // Tambahkan mode CORS
+        });
         
-        const staffIndex = staffData.findIndex(s => s[idHeader] === staffId);
-        staffData[staffIndex][statusHeader] = 'Sudah Absen';
-        staffData[staffIndex][timeHeader] = waktuAbsen;
+        const result = await response.json();
         
-        renderTable();
-        updateDashboard();
-        renderStaffSelect();
-        
-        showToast(`Absen berhasil! ${staffName} - ${waktuAbsen}`, 'success');
-        showToast('Perhatian: Perubahan hanya tersimpan di browser ini, tidak di Google Sheets.', 'info', 5000);
-        
+        if (result.success) {
+          // Update data lokal
+          const staffIndex = staffData.findIndex(s => s[idHeader] === staffId);
+          staffData[staffIndex][statusHeader] = 'Sudah Absen';
+          staffData[staffIndex][timeHeader] = waktuAbsen;
+          
+          renderTable();
+          updateDashboard();
+          renderStaffSelect();
+          
+          showToast(`Absen berhasil! ${staffName} - ${waktuAbsen}`, 'success');
+        } else {
+          showToast(`Gagal absen: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error marking attendance:', error);
+        showToast('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.', 'error');
+      } finally {
         isProcessing = false;
         resetSubmitButton();
-      }, 1500);
+      }
+    }
+
+    // Fungsi untuk mereset data absensi
+    async function resetAttendance(isAutomatic = false) {
+      if (!isAutomatic) {
+        // Konfirmasi reset manual
+        if (!confirm('Apakah Anda yakin ingin mereset semua data absensi?')) {
+          return;
+        }
+      }
+      
+      showLoading(true);
+      
+      try {
+        // Panggil API untuk reset data di Google Sheets
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            function: 'resetAttendance'
+          }),
+          mode: 'cors' // Tambahkan mode CORS
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          // Update data lokal
+          staffData.forEach(staff => {
+            staff[statusHeader] = 'Belum Absen';
+            staff[timeHeader] = '-';
+          });
+          
+          renderTable();
+          updateDashboard();
+          renderStaffSelect();
+          
+          if (isAutomatic) {
+            showToast('Data absensi telah direset otomatis', 'info');
+          } else {
+            showToast('Data absensi berhasil direset', 'success');
+          }
+        } else {
+          showToast(`Gagal reset: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error resetting attendance:', error);
+        showToast('Terjadi kesalahan saat mereset data. Silakan coba lagi.', 'error');
+      } finally {
+        showLoading(false);
+      }
     }
 
     function resetSubmitButton() {
