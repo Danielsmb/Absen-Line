@@ -394,6 +394,35 @@
       background: linear-gradient(135deg, #e74c3c, var(--danger));
     }
 
+    .sync-indicator {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .sync-indicator.syncing {
+      animation: spin 1s linear infinite;
+    }
+
+    .sync-indicator.synced {
+      color: var(--success);
+    }
+
+    .sync-indicator.error {
+      color: var(--danger);
+    }
+
     @media (max-width: 768px) {
       .container { padding: 15px; }
       .header h1 { font-size: 1.8rem; }
@@ -417,8 +446,11 @@
 <body>
   <div class="container">
     <header class="header">
-      <button class="refresh-btn" id="refreshBtn" title="Refresh Data">
+      <button class="sync-indicator" id="syncIndicator" title="Sinkronisasi Data">
         <i class="fas fa-sync-alt"></i>
+      </button>
+      <button class="refresh-btn" id="refreshBtn" title="Refresh Data">
+        <i class="fas fa-redo"></i>
       </button>
       <h1><i class="fas fa-fingerprint"></i> ABSENSI LINE TOGEL</h1>
       <p>Sistem Absensi Digital</p>
@@ -510,6 +542,7 @@
     let sheetHeaders = [];
     let isProcessing = false;
     let lastResetDate = null;
+    let autoRefreshInterval = null;
 
     // Asumsi nama kolom untuk fungsi spesifik
     let idHeader, nameHeader, statusHeader, timeHeader;
@@ -529,7 +562,8 @@
       staffSearch: document.getElementById('staffSearch'),
       currentDate: document.getElementById('currentDate'),
       currentTime: document.getElementById('currentTime'),
-      refreshBtn: document.getElementById('refreshBtn')
+      refreshBtn: document.getElementById('refreshBtn'),
+      syncIndicator: document.getElementById('syncIndicator')
     };
 
     // Inisialisasi aplikasi
@@ -539,10 +573,18 @@
       elements.submitBtn.addEventListener('click', markAttendance);
       elements.resetBtn.addEventListener('click', resetAttendance);
       elements.staffSearch.addEventListener('input', filterStaff);
-      elements.refreshBtn.addEventListener('click', loadInitialData);
+      elements.refreshBtn.addEventListener('click', () => {
+        loadInitialData();
+        showToast('Data sedang dimuat ulang...', 'info');
+      });
       
       // Periksa reset setiap menit
       setInterval(checkForMidnightReset, 60000);
+      
+      // Auto refresh setiap 30 detik untuk menjaga sinkronisasi
+      autoRefreshInterval = setInterval(() => {
+        loadInitialData(true); // Refresh diam-diam
+      }, 30000);
       
       loadInitialData();
     });
@@ -570,8 +612,12 @@
     }
 
     // Fungsi utama untuk memuat data dari Google Sheets
-    async function loadInitialData() {
-      showLoading(true);
+    async function loadInitialData(isSilent = false) {
+      if (!isSilent) {
+        showLoading(true);
+        setSyncStatus('syncing');
+      }
+      
       try {
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error('Gagal mengambil data dari Google Sheets');
@@ -591,13 +637,20 @@
         renderTable();
         renderStaffSelect();
         updateDashboard();
-        showLoading(false);
-        animateElements();
-        showToast('Data berhasil dimuat dari Google Sheets', 'success');
+        
+        if (!isSilent) {
+          showLoading(false);
+          animateElements();
+          showToast('Data berhasil dimuat dari Google Sheets', 'success');
+          setSyncStatus('synced');
+        }
       } catch (error) {
         console.error('Error loading data:', error);
-        showLoading(false);
-        showToast('Gagal memuat data. Pastikan Sheet sudah dipublikasikan.', 'error');
+        if (!isSilent) {
+          showLoading(false);
+          showToast('Gagal memuat data. Pastikan Sheet sudah dipublikasikan.', 'error');
+          setSyncStatus('error');
+        }
         loadLocalData(); // Fallback
       }
     }
@@ -742,7 +795,7 @@
       }, 30);
     }
 
-    // Fungsi untuk mencatat absensi dengan perbaikan CORS
+    // Fungsi untuk mencatat absensi dengan perbaikan sinkronisasi
     async function markAttendance() {
       if (isProcessing) return;
       const selectedOption = elements.staffSelect.options[elements.staffSelect.selectedIndex];
@@ -769,7 +822,7 @@
       const waktuAbsen = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
       
       try {
-        // Gunakan JSONP atau fetch dengan mode no-cors untuk menghindari masalah CORS
+        // Panggil API untuk update data di Google Sheets
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
           headers: {
@@ -784,17 +837,7 @@
           mode: 'no-cors' // Menggunakan mode no-cors
         });
         
-        // Karena menggunakan mode no-cors, kita tidak bisa membaca responsnya
-        // Jadi kita asumsikan berhasil dan muat ulang data
-        showToast('Memproses absensi...', 'info');
-        
-        // Tunggu sebentar agar server punya waktu untuk memproses
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Muat ulang data dari Google Sheets
-        await loadInitialData();
-        
-        // Update data lokal sebagai fallback
+        // Update data lokal sebagai feedback instan
         const staffIndex = staffData.findIndex(s => s[idHeader] === staffId);
         if (staffIndex !== -1) {
           staffData[staffIndex][statusHeader] = 'Sudah Absen';
@@ -806,6 +849,11 @@
         renderStaffSelect();
         
         showToast(`Absen berhasil! ${staffName} - ${waktuAbsen}`, 'success');
+        
+        // Setelah 2 detik, refresh data dari server untuk memastikan sinkronisasi
+        setTimeout(() => {
+          loadInitialData(true);
+        }, 2000);
       } catch (error) {
         console.error('Error marking attendance:', error);
         showToast('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.', 'error');
@@ -815,7 +863,7 @@
       }
     }
 
-    // Fungsi untuk mereset data absensi dengan perbaikan CORS
+    // Fungsi untuk mereset data absensi dengan perbaikan sinkronisasi
     async function resetAttendance(isAutomatic = false) {
       if (!isAutomatic) {
         // Konfirmasi reset manual
@@ -827,7 +875,7 @@
       showLoading(true);
       
       try {
-        // Gunakan mode no-cors untuk menghindari masalah CORS
+        // Panggil API untuk reset data di Google Sheets
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
           headers: {
@@ -839,17 +887,7 @@
           mode: 'no-cors' // Menggunakan mode no-cors
         });
         
-        // Karena menggunakan mode no-cors, kita tidak bisa membaca responsnya
-        // Jadi kita asumsikan berhasil dan muat ulang data
-        showToast('Memproses reset...', 'info');
-        
-        // Tunggu sebentar agar server punya waktu untuk memproses
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Muat ulang data dari Google Sheets
-        await loadInitialData();
-        
-        // Update data lokal sebagai fallback
+        // Update data lokal sebagai feedback instan
         staffData.forEach(staff => {
           staff[statusHeader] = 'Belum Absen';
           staff[timeHeader] = '-';
@@ -864,11 +902,33 @@
         } else {
           showToast('Data absensi berhasil direset', 'success');
         }
+        
+        // Setelah 2 detik, refresh data dari server untuk memastikan sinkronisasi
+        setTimeout(() => {
+          loadInitialData(true);
+        }, 2000);
       } catch (error) {
         console.error('Error resetting attendance:', error);
         showToast('Terjadi kesalahan saat mereset data. Silakan coba lagi.', 'error');
       } finally {
         showLoading(false);
+      }
+    }
+
+    // Fungsi untuk mengatur status sinkronisasi
+    function setSyncStatus(status) {
+      const indicator = elements.syncIndicator;
+      indicator.className = 'sync-indicator';
+      
+      if (status === 'syncing') {
+        indicator.classList.add('syncing');
+        indicator.title = 'Sedang sinkronisasi...';
+      } else if (status === 'synced') {
+        indicator.classList.add('synced');
+        indicator.title = 'Data tersinkronisasi';
+      } else if (status === 'error') {
+        indicator.classList.add('error');
+        indicator.title = 'Gagal sinkronisasi';
       }
     }
 
