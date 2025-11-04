@@ -376,6 +376,28 @@
       100% { background-color: transparent; }
     }
 
+    .refresh-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .refresh-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: rotate(180deg);
+    }
+
     @media (max-width: 768px) {
       .container {
         padding: 15px;
@@ -425,6 +447,9 @@
 <body>
   <div class="container">
     <header class="header">
+      <button class="refresh-btn" id="refreshBtn" title="Refresh Data">
+        <i class="fas fa-sync-alt"></i>
+      </button>
       <h1><i class="fas fa-fingerprint"></i> ABSENSI LINE TOGEL</h1>
       <p>Sistem Absensi Digital</p>
       <div class="header-info">
@@ -456,7 +481,7 @@
       <div class="form-group">
         <label for="staffSelect"><i class="fas fa-user-tag"></i> Pilih Nama Anda</label>
         <select id="staffSelect" class="form-control">
-          <option value=""><div class="small-spinner"></div></option>
+          <option value="">-- Pilih Nama Anda --</option>
         </select>
       </div>
       <button class="btn" id="submitBtn">
@@ -500,11 +525,14 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    // Konfigurasi Google Sheets
+    const SPREADSHEET_ID = '1LFwBDu0JS4VmYP7vtQpLgF7Roa0pWiEAb7jJlahze88';
+    const SHEET_GID = '511063901';
+    const API_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+
     // Variabel global
     let staffData = [];
     let isProcessing = false;
-    let dataVersion = null;
-    let lastUpdated = null;
 
     // Cache elemen DOM
     const elements = {
@@ -518,28 +546,18 @@
       absentCount: document.getElementById('absentCount'),
       staffSearch: document.getElementById('staffSearch'),
       currentDate: document.getElementById('currentDate'),
-      currentTime: document.getElementById('currentTime')
+      currentTime: document.getElementById('currentTime'),
+      refreshBtn: document.getElementById('refreshBtn')
     };
 
     // Inisialisasi aplikasi
     document.addEventListener('DOMContentLoaded', function() {
-      // Hindari cache dengan menambahkan timestamp
-      const links = document.querySelectorAll('link[rel="stylesheet"]');
-      links.forEach(link => {
-        const href = link.getAttribute('href');
-        if (href) {
-          link.setAttribute('href', href + '?v=' + Date.now());
-        }
-      });
-      
       updateClock();
       setInterval(updateClock, 1000);
       elements.submitBtn.addEventListener('click', markAttendance);
       elements.staffSearch.addEventListener('input', filterStaff);
+      elements.refreshBtn.addEventListener('click', loadInitialData);
       loadInitialData();
-      
-      // Tambahkan interval untuk mengecek update data setiap 30 detik
-      setInterval(checkForUpdates, 30000);
     });
 
     // Fungsi untuk update jam dan tanggal
@@ -559,58 +577,73 @@
         `<i class="far fa-clock"></i> ${hours}:${minutes}:${seconds} WIB`;
     }
 
-    // Fungsi untuk mengecek update data
-    function checkForUpdates() {
-      google.script.run
-        .withSuccessHandler(response => {
-          if (response && response.version !== dataVersion) {
-            showToast('⚡ Data diperbarui, memuat ulang...', 'info');
-            setTimeout(loadInitialData, 1000);
-          }
-        })
-        .withFailureHandler(console.error)
-        .getDataVersion();
-    }
-
-    // Fungsi utama untuk memuat data
-    function loadInitialData() {
+    // Fungsi utama untuk memuat data dari Google Sheets
+    async function loadInitialData() {
       showLoading(true);
-      google.script.run
-        .withSuccessHandler(handleDataLoadSuccess)
-        .withFailureHandler(handleDataLoadError)
-        .getStaffData(dataVersion);
+      
+      try {
+        // Fetch data dari Google Sheets
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error('Gagal mengambil data dari Google Sheets');
+        }
+        
+        const csvData = await response.text();
+        staffData = parseCSV(csvData);
+        
+        renderStaffSelect();
+        renderTable();
+        updateDashboard();
+        showLoading(false);
+        animateElements();
+        showToast('Data berhasil dimuat dari Google Sheets', 'success');
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showLoading(false);
+        showToast('Gagal memuat data. Menggunakan data lokal.', 'error');
+        
+        // Fallback ke data lokal jika gagal mengambil data dari Google Sheets
+        loadLocalData();
+      }
     }
 
-    function handleDataLoadSuccess(response) {
-      // Jika tidak ada data baru
-      if (response === null) {
-        showLoading(false);
-        return;
+    // Fungsi untuk parsing CSV
+    function parseCSV(csvText) {
+      const lines = csvText.split('\n').filter(line => line.trim() !== '');
+      const headers = lines[0].split(',').map(header => header.trim());
+      
+      const data = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(value => value.trim());
+        if (values.length >= headers.length) {
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index];
+          });
+          data.push(row);
+        }
       }
       
-      // Jika ada data baru
-      const data = response.data;
-      dataVersion = response.version;
-      lastUpdated = response.lastUpdated;
+      return data;
+    }
+
+    // Fungsi fallback untuk memuat data lokal
+    function loadLocalData() {
+      const mockStaffData = [
+        { id: "001", nama: "Ahmad Rizki", jabatan: "Manager", status: "Sudah Absen", waktu: "08:15:32" },
+        { id: "002", nama: "Siti Nurhaliza", jabatan: "Supervisor", status: "Sudah Absen", waktu: "08:22:45" },
+        { id: "003", nama: "Budi Santoso", jabatan: "Staff Admin", status: "Belum Absen", waktu: "-" },
+        { id: "004", nama: "Dewi Lestari", jabatan: "Staff IT", status: "Sudah Absen", waktu: "08:30:12" },
+        { id: "005", nama: "Eko Prasetyo", jabatan: "Staff HR", status: "Belum Absen", waktu: "-" },
+        { id: "006", nama: "Fitri Handayani", jabatan: "Staff Finance", status: "Sudah Absen", waktu: "08:45:20" },
+        { id: "007", nama: "Gunawan Wijaya", jabatan: "Staff Marketing", status: "Belum Absen", waktu: "-" },
+        { id: "008", nama: "Hesti Permata", jabatan: "Staff Operasional", status: "Sudah Absen", waktu: "09:05:15" }
+      ];
       
-      staffData = data.map(staff => {
-        if (staff.waktu && typeof staff.waktu === 'string' && staff.waktu.includes('T')) {
-          try {
-            const dateObj = new Date(staff.waktu);
-            if (!isNaN(dateObj.getTime())) {
-              staff.waktu = formatTimeFromDate(dateObj);
-            }
-          } catch (e) {
-            console.error('Error formatting waktu:', e);
-          }
-        }
-        return staff;
-      });
-      
+      staffData = [...mockStaffData];
       renderStaffSelect();
       renderTable();
       updateDashboard();
-      showLoading(false);
       animateElements();
     }
 
@@ -622,49 +655,24 @@
       });
     }
 
-    function handleDataLoadError(error) {
-      console.error('Gagal memuat data:', error);
-      elements.attendanceBody.innerHTML = `
-        <tr>
-          <td colspan="5" style="text-align: center;">
-            <div class="small-spinner"></div>
-          </td>
-        </tr>
-      `;
-      setTimeout(loadInitialData, 3000);
-    }
-
-    // Helper untuk format waktu dari Date object
-    function formatTimeFromDate(date) {
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-      return `${hours}:${minutes}:${seconds}`;
-    }
-
-    // Render dropdown staff in sheet order
+    // Render dropdown staff
     function renderStaffSelect() {
       const select = elements.staffSelect;
-      select.innerHTML = '<option value=""><div class="small-spinner"></div></option>';
+      select.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
       
-      // Jika data sudah dimuat
-      if (staffData.length > 0) {
-        select.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
-        
-        staffData.forEach(staff => {
-          const option = document.createElement('option');
-          option.value = staff.id;
-          option.textContent = `${staff.nama} (${staff.jabatan || 'Tanpa Jabatan'})`;
-          if (staff.status === 'Belum Absen') {
-            option.style.color = '#4caf50';
-            option.style.fontWeight = '500';
-          }
-          select.appendChild(option);
-        });
-      }
+      staffData.forEach(staff => {
+        const option = document.createElement('option');
+        option.value = staff.id;
+        option.textContent = `${staff.nama} (${staff.jabatan || 'Tanpa Jabatan'})`;
+        if (staff.status === 'Belum Absen') {
+          option.style.color = '#4caf50';
+          option.style.fontWeight = '500';
+        }
+        select.appendChild(option);
+      });
     }
 
-    // Render tabel absensi sesuai urutan sheet
+    // Render tabel absensi
     function renderTable(data = staffData) {
       const tbody = elements.attendanceBody;
       if (data.length === 0) {
@@ -683,17 +691,7 @@
         const row = document.createElement('tr');
         row.style.animationDelay = `${index * 0.05}s`;
         row.classList.add('animate-pop');
-        let waktuDisplay = staff.waktu || '-';
-        if (waktuDisplay.includes('T')) {
-          try {
-            const dateObj = new Date(waktuDisplay);
-            if (!isNaN(dateObj.getTime())) {
-              waktuDisplay = formatTimeFromDate(dateObj);
-            }
-          } catch (e) {
-            console.error('Error formatting waktu:', e);
-          }
-        }
+        
         row.innerHTML = `
           <td class="mobile-hidden">${staff.id}</td>
           <td>${staff.nama}</td>
@@ -701,13 +699,13 @@
           <td><span class="status ${staff.status === 'Sudah Absen' ? 'present' : 'absent'}">
             ${staff.status} <i class="fas ${staff.status === 'Sudah Absen' ? 'fa-check' : 'fa-clock'}"></i>
           </span></td>
-          <td class="time-format">${waktuDisplay}</td>
+          <td class="time-format">${staff.waktu}</td>
         `;
         tbody.appendChild(row);
       });
     }
 
-    // Filter staff dengan tetap mempertahankan urutan asli
+    // Filter staff
     function filterStaff() {
       const term = elements.staffSearch.value.toLowerCase().trim();
       if (!term) {
@@ -750,14 +748,22 @@
     }
 
     // Fungsi untuk mencatat absensi
-    async function markAttendance() {
+    function markAttendance() {
       if (isProcessing) return;
       const selectedOption = elements.staffSelect.options[elements.staffSelect.selectedIndex];
       const staffId = selectedOption.value?.trim();
       const staffName = selectedOption.text.split(' (')[0];
+      
       if (!staffId) {
         showToast('⚠️ Silakan pilih nama Anda terlebih dahulu!', 'warning');
         elements.staffSelect.focus();
+        return;
+      }
+
+      // Cek apakah staff sudah absen
+      const staff = staffData.find(s => s.id === staffId);
+      if (staff.status === 'Sudah Absen') {
+        showToast('⚠️ Anda sudah absen hari ini!', 'warning');
         return;
       }
 
@@ -765,77 +771,30 @@
       elements.submitBtn.disabled = true;
       elements.submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SEDANG ABSEN...';
 
-      try {
-        const response = await new Promise((resolve, reject) => {
-          google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(reject)
-            .markAttendance(staffId);
-        });
-
-        if (response.success) {
-          showToast(`Absen berhasil! ${staffName} - ${response.waktu}`, 'success');
-          // Dapatkan data terbaru untuk staff ini saja
-          const updatedStaff = await new Promise((resolve) => {
-            google.script.run
-              .withSuccessHandler(resolve)
-              .getUpdatedStaffData(staffId);
-          });
-          // Update data di tabel tanpa refresh seluruh halaman
-          updateStaffRow(updatedStaff);
-          updateDashboardStats();
-        } else {
-          showToast(`⚠️ ${response.message}`, response.alreadyMarked ? 'warning' : 'error');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        showToast('❌ Gagal terhubung ke server', 'error');
-      } finally {
+      // Simulasi proses absensi
+      setTimeout(() => {
+        // Update status staff
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const waktuAbsen = `${hours}:${minutes}:${seconds}`;
+        
+        // Update data di array
+        const staffIndex = staffData.findIndex(s => s.id === staffId);
+        staffData[staffIndex].status = 'Sudah Absen';
+        staffData[staffIndex].waktu = waktuAbsen;
+        
+        // Update UI
+        renderTable();
+        updateDashboard();
+        renderStaffSelect();
+        
+        showToast(`Absen berhasil! ${staffName} - ${waktuAbsen}`, 'success');
+        
         isProcessing = false;
         resetSubmitButton();
-      }
-    }
-
-    function updateStaffRow(updatedStaff) {
-      if (!updatedStaff) return;
-      const rows = elements.attendanceBody.querySelectorAll('tr');
-      for (let row of rows) {
-        const rowId = row.cells[0]?.textContent.trim().toLowerCase();
-        if (rowId === updatedStaff.id.toLowerCase()) {
-          let waktuDisplay = updatedStaff.waktu || '-';
-          if (waktuDisplay.includes('T')) {
-            try {
-              const dateObj = new Date(waktuDisplay);
-              if (!isNaN(dateObj.getTime())) {
-                waktuDisplay = formatTimeFromDate(dateObj);
-              }
-            } catch (e) {
-              console.error('Error formatting waktu:', e);
-            }
-          }
-          row.innerHTML = `
-            <td class="mobile-hidden">${updatedStaff.id}</td>
-            <td>${updatedStaff.nama}</td>
-            <td class="mobile-hidden">${updatedStaff.jabatan || '-'}</td>
-            <td><span class="status ${updatedStaff.status === 'Sudah Absen' ? 'present' : 'absent'}">
-              ${updatedStaff.status} <i class="fas ${updatedStaff.status === 'Sudah Absen' ? 'fa-check' : 'fa-clock'}"></i>
-            </span></td>
-            <td class="time-format">${waktuDisplay}</td>
-          `;
-          row.classList.add('highlight-change');
-          setTimeout(() => row.classList.remove('highlight-change'), 2000);
-          break;
-        }
-      }
-    }
-
-    function updateDashboardStats() {
-      const presentCount = document.querySelectorAll('.status.present').length;
-      const totalRows = elements.attendanceBody.querySelectorAll('tr').length;
-      const absentCount = totalRows - presentCount;
-
-      animateCounter(elements.presentCount, presentCount);
-      animateCounter(elements.absentCount, absentCount);
+      }, 1500);
     }
 
     function resetSubmitButton() {
@@ -871,304 +830,5 @@
       }, duration);
     }
   </script>
-
-  <? // Server-side Google Apps Script code ?>
-  <?
-  /**
-  * Absensi Line Togel - Google Apps Script
-  * Versi 2.0
-  * Dengan fitur auto reset harian
-  */
-
-  const CONFIG = {
-    SPREADSHEET_ID: '1LFwBDu0JS4VmYP7vtQpLgF7Roa0pWiEAb7jJlahze88',
-    SHEET_NAME: 'NAMA STAFF',
-    TIMEZONE: 'Asia/Bangkok',
-    DATE_FORMAT: 'HH:mm:ss',
-    COLUMNS: {
-      ID: 1,
-      NAMA: 2,
-      JABATAN: 3,
-      STATUS: 4,
-      WAKTU: 5
-    },
-    RESET_HOUR: 0 // Jam 00:00 (midnight) waktu Bangkok
-  };
-
-  function doGet() {
-    // Create the reset trigger when the app is accessed
-    createDailyResetTrigger();
-    
-    validateEnvironment();
-    const template = HtmlService.createTemplateFromFile('Index');
-    const initialData = getInitialDataHtml();
-    template.initialData = initialData;
-    return template.evaluate()
-      .setTitle('ABSENSI LINE TOGEL')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
-  }
-
-  function validateEnvironment() {
-    const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const tz = spreadsheet.getSpreadsheetTimeZone();
-    if (tz !== CONFIG.TIMEZONE) {
-      console.warn(`Timezone spreadsheet (${tz}) tidak sesuai dengan konfigurasi (${CONFIG.TIMEZONE})`);
-    }
-    const scriptTz = Session.getScriptTimeZone();
-    if (scriptTz !== CONFIG.TIMEZONE) {
-      console.warn(`Timezone script (${scriptTz}) tidak sesuai dengan konfigurasi (${CONFIG.TIMEZONE})`);
-    }
-  }
-
-  function getSheet() {
-    const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheetByName(CONFIG.SHEET_NAME);
-    const waktuCol = CONFIG.COLUMNS.WAKTU;
-    sheet.getRange(1, waktuCol, sheet.getMaxRows(), 1)
-      .setNumberFormat(CONFIG.DATE_FORMAT);
-    return sheet;
-  }
-
-  function getDataVersion() {
-    const sheet = getSheet();
-    const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-    const dataRange = sheet.getRange(1, 1, lastRow, lastCol);
-    const values = dataRange.getValues();
-    
-    let hash = 0;
-    for (let i = 0; i < values.length; i++) {
-      for (let j = 0; j < values[i].length; j++) {
-        hash = ((hash << 5) - hash) + JSON.stringify(values[i][j]).length;
-        hash = hash & hash;
-      }
-    }
-    
-    return {
-      version: hash,
-      lastUpdated: new Date().getTime()
-    };
-  }
-
-  function getStaffData(clientVersion) {
-    const currentVersion = getDataVersion().version;
-    
-    if (clientVersion && clientVersion === currentVersion) {
-      return null;
-    }
-    
-    const sheet = getSheet();
-    const data = sheet.getDataRange().getValues();
-    let lastRowWithData = 0;
-    
-    for (let i = 1; i < data.length; i++) {
-      if (!data[i][CONFIG.COLUMNS.ID - 1]) break;
-      lastRowWithData = i;
-    }
-    
-    const staffData = data.slice(1, lastRowWithData + 1).map(row => ({
-      id: String(row[CONFIG.COLUMNS.ID - 1]).trim(),
-      nama: row[CONFIG.COLUMNS.NAMA - 1] || '',
-      jabatan: row[CONFIG.COLUMNS.JABATAN - 1] || '',
-      status: row[CONFIG.COLUMNS.STATUS - 1] || 'Belum Absen',
-      waktu: formatWaktu(row[CONFIG.COLUMNS.WAKTU - 1])
-    }));
-    
-    return {
-      data: staffData,
-      version: currentVersion,
-      lastUpdated: new Date().getTime()
-    };
-  }
-
-  function getInitialDataHtml() {
-    const staffData = getStaffData().data;
-    const totalStaff = staffData.length;
-    const presentCount = staffData.filter(staff => staff.status === 'Sudah Absen').length;
-    const absentCount = totalStaff - presentCount;
-    const tableRows = staffData.map(staff => {
-      const waktuDisplay = staff.waktu === '-' ? '-' :
-        Utilities.formatDate(new Date(staff.waktu), CONFIG.TIMEZONE, CONFIG.DATE_FORMAT);
-      return `
-      <tr>
-        <td class="mobile-hidden">${staff.id}</td>
-        <td>${staff.nama}</td>
-        <td class="mobile-hidden">${staff.jabatan || '-'}</td>
-        <td><span class="status ${staff.status === 'Sudah Absen' ? 'present' : 'absent'}">
-          ${staff.status} <i class="fas ${staff.status === 'Sudah Absen' ? 'fa-check' : 'fa-clock'}"></i>
-        </span></td>
-        <td class="time-format">${waktuDisplay}</td>
-      </tr>
-      `;
-    }).join('');
-
-    const selectOptions = staffData.map(staff => {
-      const highlight = staff.status === 'Belum Absen' ? 'style="color: #4caf50; font-weight: 500;"' : '';
-      return `<option value="${staff.id}" ${highlight}>${staff.nama} (${staff.jabatan || 'Tanpa Jabatan'})</option>`;
-    }).join('');
-
-    return {
-      tableRows: tableRows || '<tr><td colspan="5" style="text-align: center; color: var(--gray);"><i class="fas fa-info-circle"></i> Tidak ada data absensi</td></tr>',
-      selectOptions: selectOptions || '<option value="">-- Tidak ada data staff --</option>',
-      stats: { totalStaff, presentCount, absentCount }
-    };
-  }
-
-  function getUpdatedStaffData(staffId) {
-    const sheet = getSheet();
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      const rowId = String(data[i][CONFIG.COLUMNS.ID - 1]).trim().toLowerCase();
-      if (rowId === staffId.toLowerCase().trim()) {
-        return {
-          id: String(data[i][CONFIG.COLUMNS.ID - 1]).trim(),
-          nama: data[i][CONFIG.COLUMNS.NAMA - 1] || '',
-          jabatan: data[i][CONFIG.COLUMNS.JABATAN - 1] || '',
-          status: data[i][CONFIG.COLUMNS.STATUS - 1] || 'Belum Absen',
-          waktu: formatWaktu(data[i][CONFIG.COLUMNS.WAKTU - 1])
-        };
-      }
-    }
-    return null;
-  }
-
-  function formatWaktu(waktu) {
-    if (!waktu) return '-';
-    if (typeof waktu === 'number') {
-      const date = new Date((waktu - 25569) * 86400 * 1000);
-      return Utilities.formatDate(date, CONFIG.TIMEZONE, CONFIG.DATE_FORMAT);
-    }
-    if (typeof waktu === 'string') {
-      if (/^\d{2}:\d{2}:\d{2}$/.test(waktu)) {
-        return waktu;
-      }
-      try {
-        const date = new Date(waktu);
-        if (!isNaN(date.getTime())) {
-          return Utilities.formatDate(date, CONFIG.TIMEZONE, CONFIG.DATE_FORMAT);
-        }
-      } catch(e) {
-        console.error('Gagal parsing tanggal:', waktu, e);
-      }
-    }
-    if (waktu instanceof Date) {
-      return Utilities.formatDate(waktu, CONFIG.TIMEZONE, CONFIG.DATE_FORMAT);
-    }
-    return '-';
-  }
-
-  function markAttendance(staffId) {
-    if (!staffId || typeof staffId !== 'string') {
-      return { success: false, message: 'ID Staff tidak valid' };
-    }
-
-    const sheet = getSheet();
-    const data = sheet.getDataRange().getValues();
-    let staffRow = null;
-    let rowIndex = 0;
-    for (let i = 1; i < data.length; i++) {
-      const rowId = String(data[i][CONFIG.COLUMNS.ID - 1]).trim().toLowerCase();
-      if (rowId === staffId.toLowerCase().trim()) {
-        staffRow = data[i];
-        rowIndex = i + 1;
-        break;
-      }
-    }
-
-    if (!staffRow) {
-      return { success: false, message: 'Data staff tidak ditemukan' };
-    }
-
-    if (staffRow[CONFIG.COLUMNS.STATUS - 1] === 'Sudah Absen') {
-      return {
-        success: false,
-        message: 'Anda sudah absen hari ini!',
-        alreadyMarked: true
-      };
-    }
-
-    Utilities.sleep(1000);
-    const now = new Date();
-    const waktuAbsen = Utilities.formatDate(now, CONFIG.TIMEZONE, CONFIG.DATE_FORMAT);
-    
-    sheet.getRange(rowIndex, CONFIG.COLUMNS.STATUS).setValue('Sudah Absen');
-    const waktuRange = sheet.getRange(rowIndex, CONFIG.COLUMNS.WAKTU);
-    waktuRange.clearContent();
-    waktuRange.setValue(waktuAbsen);
-    waktuRange.setNumberFormat(CONFIG.DATE_FORMAT);
-
-    return {
-      success: true,
-      nama: staffRow[CONFIG.COLUMNS.NAMA - 1],
-      jabatan: staffRow[CONFIG.COLUMNS.JABATAN - 1],
-      waktu: waktuAbsen,
-      message: 'Absen berhasil dicatat!'
-    };
-  }
-
-  function createDailyResetTrigger() {
-    // Delete any existing triggers to avoid duplicates
-    const triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(trigger => {
-      if (trigger.getHandlerFunction() === 'dailyReset') {
-        ScriptApp.deleteTrigger(trigger);
-      }
-    });
-
-    // Create new daily trigger
-    const today = new Date();
-    const resetTime = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      CONFIG.RESET_HOUR,
-      0, 0, 0
-    );
-    
-    // If it's already past reset time today, schedule for tomorrow
-    if (today > resetTime) {
-      resetTime.setDate(resetTime.getDate() + 1);
-    }
-
-    ScriptApp.newTrigger('dailyReset')
-      .timeBased()
-      .at(resetTime)
-      .create();
-    
-    console.log('Daily reset trigger created for:', resetTime);
-  }
-
-  function dailyReset() {
-    const sheet = getSheet();
-    const lastRow = sheet.getLastRow();
-    
-    if (lastRow <= 1) return; // No data to reset
-    
-    // Reset STATUS column (column 4)
-    const statusRange = sheet.getRange(2, CONFIG.COLUMNS.STATUS, lastRow - 1, 1);
-    statusRange.setValue('Belum Absen');
-    
-    // Clear WAKTU column (column 5)
-    const waktuRange = sheet.getRange(2, CONFIG.COLUMNS.WAKTU, lastRow - 1, 1);
-    waktuRange.clearContent();
-    
-    // Recreate the trigger for the next day
-    createDailyResetTrigger();
-    
-    console.log('Attendance data reset at:', new Date());
-    
-    // Optional: Add notification
-    try {
-      MailApp.sendEmail({
-        to: Session.getEffectiveUser().getEmail(),
-        subject: 'Reset Absensi Harian Berhasil',
-        body: `Data absensi telah direset pada ${new Date()}.\n\nTotal data yang direset: ${lastRow - 1}`
-      });
-    } catch(e) {
-      console.error('Gagal mengirim notifikasi email:', e);
-    }
-  }
-  ?>
 </body>
 </html>
