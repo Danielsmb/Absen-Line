@@ -423,6 +423,14 @@
       color: var(--danger);
     }
 
+    .last-sync {
+      position: absolute;
+      bottom: 10px;
+      right: 20px;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.6);
+    }
+
     @media (max-width: 768px) {
       .container { padding: 15px; }
       .header h1 { font-size: 1.8rem; }
@@ -430,6 +438,7 @@
       .card { padding: 20px; }
       th, td { padding: 10px 8px; font-size: 0.8rem; }
       .mobile-hidden { display: none; }
+      .last-sync { display: none; }
     }
 
     @keyframes pop {
@@ -458,6 +467,7 @@
         <span id="currentDate"><i class="far fa-calendar-alt"></i> Loading...</span>
         <span id="currentTime"><i class="far fa-clock"></i> Loading...</span>
       </div>
+      <div class="last-sync" id="lastSync">Terakhir sinkronisasi: -</div>
     </header>
 
     <div class="dashboard">
@@ -543,6 +553,7 @@
     let isProcessing = false;
     let lastResetDate = null;
     let autoRefreshInterval = null;
+    let lastSyncTime = null;
 
     // Asumsi nama kolom untuk fungsi spesifik
     let idHeader, nameHeader, statusHeader, timeHeader;
@@ -563,7 +574,8 @@
       currentDate: document.getElementById('currentDate'),
       currentTime: document.getElementById('currentTime'),
       refreshBtn: document.getElementById('refreshBtn'),
-      syncIndicator: document.getElementById('syncIndicator')
+      syncIndicator: document.getElementById('syncIndicator'),
+      lastSync: document.getElementById('lastSync')
     };
 
     // Inisialisasi aplikasi
@@ -637,6 +649,10 @@
         renderTable();
         renderStaffSelect();
         updateDashboard();
+        
+        // Update waktu sinkronisasi terakhir
+        lastSyncTime = new Date();
+        updateLastSyncTime();
         
         if (!isSilent) {
           showLoading(false);
@@ -829,7 +845,7 @@
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            function: 'updateAttendance',
+            function: 'updateAttendance",
             staffId: staffId,
             status: 'Sudah Absen',
             time: waktuAbsen
@@ -929,6 +945,16 @@
       } else if (status === 'error') {
         indicator.classList.add('error');
         indicator.title = 'Gagal sinkronisasi';
+      }
+    }
+
+    // Fungsi untuk update waktu sinkronisasi terakhir
+    function updateLastSyncTime() {
+      if (lastSyncTime) {
+        const hours = String(lastSyncTime.getHours()).padStart(2, '0');
+        const minutes = String(lastSyncTime.getMinutes()).padStart(2, '0');
+        const seconds = String(lastSyncTime.getSeconds()).padStart(2, '0');
+        elements.lastSync.textContent = `Terakhir sinkronisasi: ${hours}:${minutes}:${seconds}`;
       }
     }
 
