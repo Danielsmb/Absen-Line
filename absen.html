@@ -108,6 +108,69 @@
             color: var(--danger-color);
         }
 
+        .api-config {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .api-config h3 {
+            margin-bottom: 15px;
+            color: var(--dark-color);
+        }
+
+        .api-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .api-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-family: monospace;
+        }
+
+        .api-button {
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .api-button:hover {
+            background-color: #3367d6;
+        }
+
+        .api-instructions {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+        }
+
+        .api-instructions h4 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .api-instructions ol {
+            margin-left: 20px;
+        }
+
+        .api-instructions li {
+            margin-bottom: 5px;
+        }
+
         .tabs {
             display: flex;
             margin-bottom: 20px;
@@ -402,6 +465,25 @@
             </div>
         </header>
 
+        <div class="api-config">
+            <h3>Konfigurasi API Google Sheets</h3>
+            <div class="api-input-group">
+                <input type="text" id="apiKeyInput" class="api-input" placeholder="Masukkan API Key Google Sheets Anda">
+                <button class="api-button" onclick="saveApiKey()">Simpan</button>
+            </div>
+            <div class="api-instructions">
+                <h4>Cara Mengatasi Error 401 (Unauthorized):</h4>
+                <ol>
+                    <li>Buka <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                    <li>Pilih project yang sama dengan API Key Anda</li>
+                    <li>Aktifkan Google Sheets API jika belum aktif</li>
+                    <li>Buat API Key baru atau gunakan yang sudah ada</li>
+                    <li>Bagikan spreadsheet Anda dengan izin "Anyone with the link can view"</li>
+                    <li>Masukkan API Key yang valid di atas dan klik Simpan</li>
+                </ol>
+            </div>
+        </div>
+
         <main>
             <div class="tabs">
                 <button class="tab active" data-shift="pagi">
@@ -475,7 +557,7 @@
         // Google Sheets Configuration
         const SPREADSHEET_ID = '18XfgBl-55086BTNlRiOdhLP3s-Th9ZllKBnnafE30gg';
         const SHEET_ID = '439919036';
-        const API_KEY = 'AIzaSyB4p3qL5o6mQ8s9r5g8t9u7v6w5x4y3z2a1'; // API Key untuk akses Google Sheets
+        let API_KEY = localStorage.getItem('googleSheetsApiKey') || '';
 
         // Current active shift
         let currentShift = 'pagi';
@@ -485,9 +567,15 @@
             malam: []
         };
         let autoRefreshInterval;
+        let localData = localStorage.getItem('localAttendanceData') ? JSON.parse(localStorage.getItem('localAttendanceData')) : {};
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
+            // Set API key from localStorage if exists
+            if (API_KEY) {
+                document.getElementById('apiKeyInput').value = API_KEY;
+            }
+            
             // Update date and time
             updateDateTime();
             setInterval(updateDateTime, 1000);
@@ -505,6 +593,21 @@
                 }
             }, 30000);
         });
+
+        // Save API Key
+        function saveApiKey() {
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            API_KEY = apiKeyInput.value.trim();
+            
+            if (API_KEY) {
+                localStorage.setItem('googleSheetsApiKey', API_KEY);
+                showNotification('API Key berhasil disimpan', 'success');
+                // Reload data with new API key
+                loadData(currentShift);
+            } else {
+                showNotification('API Key tidak boleh kosong', 'error');
+            }
+        }
 
         // Update current date and time
         function updateDateTime() {
@@ -558,25 +661,34 @@
                 
                 // Extract data based on column positions
                 if (values[0]) { // Column A - Nama Pagi
+                    const staffName = values[0];
+                    const checkInTime = values[1] || (localData.pagi && localData.pagi[staffName]) || '';
+                    
                     result.pagi.push({
-                        name: values[0],
-                        checkIn: values[1] || '',
+                        name: staffName,
+                        checkIn: checkInTime,
                         row: i + 2 // Store the original row number
                     });
                 }
                 
                 if (values[3]) { // Column D - Nama Siang
+                    const staffName = values[3];
+                    const checkInTime = values[4] || (localData.siang && localData.siang[staffName]) || '';
+                    
                     result.siang.push({
-                        name: values[3],
-                        checkIn: values[4] || '',
+                        name: staffName,
+                        checkIn: checkInTime,
                         row: i + 2 // Store the original row number
                     });
                 }
                 
                 if (values[6]) { // Column G - Nama Malam
+                    const staffName = values[6];
+                    const checkInTime = values[7] || (localData.malam && localData.malam[staffName]) || '';
+                    
                     result.malam.push({
-                        name: values[6],
-                        checkIn: values[7] || '',
+                        name: staffName,
+                        checkIn: checkInTime,
                         row: i + 2 // Store the original row number
                     });
                 }
@@ -605,6 +717,10 @@
                 case 'error':
                     icon.className = 'fas fa-exclamation-circle';
                     text.textContent = message || 'Gagal sinkronisasi';
+                    break;
+                case 'offline':
+                    icon.className = 'fas fa-wifi';
+                    text.textContent = message || 'Mode offline';
                     break;
             }
         }
@@ -661,6 +777,7 @@
                     <tbody>
                         ${data.map((staff, index) => {
                             const isCheckedIn = staff.checkIn !== '';
+                            const isLocalOnly = localData[shift] && localData[shift][staff.name] && staff.checkIn === localData[shift][staff.name];
                             
                             return `
                                 <tr>
@@ -672,6 +789,7 @@
                                             <i class="fas fa-sign-in-alt"></i>Check-in
                                         </button>
                                         ${isCheckedIn ? `<button class="delete-btn" onclick="deleteAttendance('${shift}', '${staff.name}', ${index})"><i class="fas fa-trash"></i></button>` : ''}
+                                        ${isLocalOnly ? '<span style="color: var(--warning-color); font-size: 12px; margin-left: 5px;"><i class="fas fa-wifi"></i> Lokal</span>' : ''}
                                     </td>
                                 </tr>
                             `;
@@ -686,7 +804,7 @@
                 refreshBtn.classList.remove('syncing');
             } catch (error) {
                 console.error('Error loading data:', error);
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Terjadi kesalahan saat memuat data. Silakan pastikan spreadsheet Anda telah dibagikan dengan izin "Anyone with the link can view".</p></div>';
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Terjadi kesalahan saat memuat data. Silakan periksa API Key Anda atau coba lagi.</p></div>';
                 updateSyncStatus('error', 'Gagal memuat data');
                 refreshBtn.classList.remove('syncing');
                 showNotification('Terjadi kesalahan saat memuat data: ' + error.message, 'error');
@@ -701,6 +819,13 @@
                 
                 // Update local data immediately for better UX
                 staffData[shift][index].checkIn = timeString;
+                
+                // Save to local storage as backup
+                if (!localData[shift]) {
+                    localData[shift] = {};
+                }
+                localData[shift][staffName] = timeString;
+                localStorage.setItem('localAttendanceData', JSON.stringify(localData));
                 
                 // Update UI immediately
                 const timeElement = document.getElementById(`time-${shift}-${index}`);
@@ -718,8 +843,24 @@
                 deleteBtn.setAttribute('onclick', `deleteAttendance('${shift}', '${staffName}', ${index})`);
                 btnContainer.appendChild(deleteBtn);
                 
+                // Add local indicator
+                const localIndicator = document.createElement('span');
+                localIndicator.style.color = 'var(--warning-color)';
+                localIndicator.style.fontSize = '12px';
+                localIndicator.style.marginLeft = '5px';
+                localIndicator.innerHTML = '<i class="fas fa-wifi"></i> Lokal';
+                btnContainer.appendChild(localIndicator);
+                
                 // Update sync status
                 updateSyncStatus('syncing', 'Menyimpan check-in...');
+                
+                // Check if API key is available
+                if (!API_KEY) {
+                    timeElement.classList.remove('syncing');
+                    updateSyncStatus('offline', 'Mode offline - Data tersimpan lokal');
+                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (tersimpan lokal)`, 'warning');
+                    return;
+                }
                 
                 // Determine column based on shift
                 let column;
@@ -760,32 +901,28 @@
                     updateSyncStatus('synced');
                     showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
                     
-                    // Verify the update by refreshing data after a short delay
+                    // Remove local indicator
+                    if (localIndicator) {
+                        btnContainer.removeChild(localIndicator);
+                    }
+                    
+                    // Verify that update by refreshing data after a short delay
                     setTimeout(() => {
                         loadData(shift);
                     }, 1000);
                 } else {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json();
+                    if (response.status === 401) {
+                        updateSyncStatus('error', 'Error 401 - API Key tidak valid');
+                        showNotification('Error 401 - API Key tidak valid. Silakan periksa konfigurasi API Key Anda.', 'error');
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                 }
             } catch (error) {
                 console.error('Error checking in:', error);
                 updateSyncStatus('error', 'Gagal menyimpan check-in');
                 showNotification('Terjadi kesalahan saat check-in: ' + error.message, 'error');
-                
-                // Revert UI changes on error
-                const timeElement = document.getElementById(`time-${shift}-${index}`);
-                const btnElement = document.getElementById(`btn-${shift}-${index}`);
-                
-                timeElement.textContent = '-';
-                timeElement.classList.remove('syncing');
-                btnElement.disabled = false;
-                
-                // Remove delete button if it exists
-                const btnContainer = btnElement.parentElement;
-                const deleteBtn = btnContainer.querySelector('.delete-btn');
-                if (deleteBtn) {
-                    btnContainer.removeChild(deleteBtn);
-                }
             }
         }
 
@@ -798,6 +935,12 @@
             try {
                 // Update local data immediately for better UX
                 staffData[shift][index].checkIn = '';
+                
+                // Remove from local storage
+                if (localData[shift] && localData[shift][staffName]) {
+                    delete localData[shift][staffName];
+                    localStorage.setItem('localAttendanceData', JSON.stringify(localData));
+                }
                 
                 // Update UI immediately
                 const timeElement = document.getElementById(`time-${shift}-${index}`);
@@ -814,8 +957,22 @@
                     btnContainer.removeChild(deleteBtn);
                 }
                 
+                // Remove local indicator if exists
+                const localIndicator = btnContainer.querySelector('span');
+                if (localIndicator) {
+                    btnContainer.removeChild(localIndicator);
+                }
+                
                 // Update sync status
                 updateSyncStatus('syncing', 'Menghapus check-in...');
+                
+                // Check if API key is available
+                if (!API_KEY) {
+                    timeElement.classList.remove('syncing');
+                    updateSyncStatus('offline', 'Mode offline - Data tersimpan lokal');
+                    showNotification(`Data check-in untuk ${staffName} berhasil dihapus (tersimpan lokal)`, 'warning');
+                    return;
+                }
                 
                 // Determine column based on shift
                 let column;
@@ -856,33 +1013,23 @@
                     updateSyncStatus('synced');
                     showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
                     
-                    // Verify the update by refreshing data after a short delay
+                    // Verify that update by refreshing data after a short delay
                     setTimeout(() => {
                         loadData(shift);
                     }, 1000);
                 } else {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json();
+                    if (response.status === 401) {
+                        updateSyncStatus('error', 'Error 401 - API Key tidak valid');
+                        showNotification('Error 401 - API Key tidak valid. Silakan periksa konfigurasi API Key Anda.', 'error');
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                 }
             } catch (error) {
                 console.error('Error deleting attendance:', error);
                 updateSyncStatus('error', 'Gagal menghapus check-in');
                 showNotification('Terjadi kesalahan saat menghapus data: ' + error.message, 'error');
-                
-                // Revert UI changes on error
-                const timeElement = document.getElementById(`time-${shift}-${index}`);
-                const btnElement = document.getElementById(`btn-${shift}-${index}`);
-                
-                timeElement.textContent = staffData[shift][index].checkIn;
-                timeElement.classList.remove('syncing');
-                btnElement.disabled = true;
-                
-                // Add delete button back
-                const btnContainer = btnElement.parentElement;
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-                deleteBtn.setAttribute('onclick', `deleteAttendance('${shift}', '${staffName}', ${index})`);
-                btnContainer.appendChild(deleteBtn);
             }
         }
 
