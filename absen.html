@@ -87,6 +87,27 @@
             color: var(--primary-color);
         }
 
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .sync-status.synced {
+            color: var(--secondary-color);
+        }
+
+        .sync-status.syncing {
+            color: var(--warning-color);
+        }
+
+        .sync-status.error {
+            color: var(--danger-color);
+        }
+
         .tabs {
             display: flex;
             margin-bottom: 20px;
@@ -176,6 +197,10 @@
             background-color: #2a8c43;
         }
 
+        .refresh-btn.syncing {
+            background-color: var(--warning-color);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -246,6 +271,21 @@
         .time-display {
             font-weight: 500;
             color: var(--secondary-color);
+            position: relative;
+        }
+
+        .time-display.syncing::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--warning-color);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
         }
 
         .notification {
@@ -260,6 +300,7 @@
             z-index: 1000;
             transform: translateX(120%);
             transition: transform 0.3s ease;
+            max-width: 350px;
         }
 
         .notification.show {
@@ -353,6 +394,10 @@
                 <div class="date-time">
                     <div class="current-date" id="currentDate"></div>
                     <div class="current-time" id="currentTime"></div>
+                    <div class="sync-status" id="syncStatus">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Tersinkronisasi</span>
+                    </div>
                 </div>
             </div>
         </header>
@@ -374,7 +419,7 @@
                 <div class="table-container">
                     <div class="table-header">
                         <div class="table-title">Daftar Absensi Shift Pagi</div>
-                        <button class="refresh-btn" onclick="loadData('pagi')">
+                        <button class="refresh-btn" id="refresh-pagi" onclick="loadData('pagi')">
                             <i class="fas fa-sync-alt"></i>Refresh
                         </button>
                     </div>
@@ -390,7 +435,7 @@
                 <div class="table-container">
                     <div class="table-header">
                         <div class="table-title">Daftar Absensi Shift Siang</div>
-                        <button class="refresh-btn" onclick="loadData('siang')">
+                        <button class="refresh-btn" id="refresh-siang" onclick="loadData('siang')">
                             <i class="fas fa-sync-alt"></i>Refresh
                         </button>
                     </div>
@@ -406,7 +451,7 @@
                 <div class="table-container">
                     <div class="table-header">
                         <div class="table-title">Daftar Absensi Shift Malam</div>
-                        <button class="refresh-btn" onclick="loadData('malam')">
+                        <button class="refresh-btn" id="refresh-malam" onclick="loadData('malam')">
                             <i class="fas fa-sync-alt"></i>Refresh
                         </button>
                     </div>
@@ -439,6 +484,7 @@
             siang: [],
             malam: []
         };
+        let autoRefreshInterval;
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
@@ -451,6 +497,13 @@
 
             // Load initial data
             loadData('pagi');
+            
+            // Setup auto-refresh every 30 seconds
+            autoRefreshInterval = setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    loadData(currentShift);
+                }
+            }, 30000);
         });
 
         // Update current date and time
@@ -532,10 +585,42 @@
             return result;
         }
 
+        // Update sync status
+        function updateSyncStatus(status, message) {
+            const syncStatus = document.getElementById('syncStatus');
+            const icon = syncStatus.querySelector('i');
+            const text = syncStatus.querySelector('span');
+            
+            syncStatus.className = 'sync-status ' + status;
+            
+            switch(status) {
+                case 'synced':
+                    icon.className = 'fas fa-check-circle';
+                    text.textContent = message || 'Tersinkronisasi';
+                    break;
+                case 'syncing':
+                    icon.className = 'fas fa-sync-alt fa-spin';
+                    text.textContent = message || 'Menyinkronisasi...';
+                    break;
+                case 'error':
+                    icon.className = 'fas fa-exclamation-circle';
+                    text.textContent = message || 'Gagal sinkronisasi';
+                    break;
+            }
+        }
+
         // Load data from Google Sheets
         async function loadData(shift) {
             const container = document.getElementById(`${shift}TableContainer`);
-            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            const refreshBtn = document.getElementById(`refresh-${shift}`);
+            
+            // Show loading state
+            if (container.children.length === 0 || !container.querySelector('table')) {
+                container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            }
+            
+            refreshBtn.classList.add('syncing');
+            updateSyncStatus('syncing', 'Memuat data...');
             
             try {
                 // Use CSV export method to get data
@@ -548,12 +633,17 @@
                 }
                 
                 const csvText = await response.text();
-                staffData = parseCsvData(csvText);
+                const newData = parseCsvData(csvText);
+                
+                // Update staff data
+                staffData = newData;
                 
                 const data = staffData[shift];
                 
                 if (!data || data.length === 0) {
                     container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Tidak ada data staff untuk shift ini</p></div>';
+                    updateSyncStatus('synced');
+                    refreshBtn.classList.remove('syncing');
                     return;
                 }
                 
@@ -591,9 +681,14 @@
                 
                 container.innerHTML = '';
                 container.appendChild(table);
+                
+                updateSyncStatus('synced');
+                refreshBtn.classList.remove('syncing');
             } catch (error) {
                 console.error('Error loading data:', error);
                 container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Terjadi kesalahan saat memuat data. Silakan pastikan spreadsheet Anda telah dibagikan dengan izin "Anyone with the link can view".</p></div>';
+                updateSyncStatus('error', 'Gagal memuat data');
+                refreshBtn.classList.remove('syncing');
                 showNotification('Terjadi kesalahan saat memuat data: ' + error.message, 'error');
             }
         }
@@ -607,29 +702,36 @@
                 // Update local data immediately for better UX
                 staffData[shift][index].checkIn = timeString;
                 
-                // Update UI immediately without loading
-                document.getElementById(`time-${shift}-${index}`).textContent = timeString;
-                document.getElementById(`btn-${shift}-${index}`).disabled = true;
+                // Update UI immediately
+                const timeElement = document.getElementById(`time-${shift}-${index}`);
+                const btnElement = document.getElementById(`btn-${shift}-${index}`);
+                
+                timeElement.textContent = timeString;
+                timeElement.classList.add('syncing');
+                btnElement.disabled = true;
                 
                 // Add delete button
-                const btnContainer = document.getElementById(`btn-${shift}-${index}`).parentElement;
+                const btnContainer = btnElement.parentElement;
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
                 deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
                 deleteBtn.setAttribute('onclick', `deleteAttendance('${shift}', '${staffName}', ${index})`);
                 btnContainer.appendChild(deleteBtn);
                 
+                // Update sync status
+                updateSyncStatus('syncing', 'Menyimpan check-in...');
+                
                 // Determine column based on shift
                 let column;
                 switch(shift) {
                     case 'pagi':
-                        column = 'B';
+                        column = 'B'; // Column B for Pagi shift
                         break;
                     case 'siang':
-                        column = 'E';
+                        column = 'E'; // Column E for Siang shift
                         break;
                     case 'malam':
-                        column = 'H';
+                        column = 'H'; // Column H for Malam shift
                         break;
                     default:
                         column = 'B';
@@ -641,8 +743,8 @@
                 // Update the cell with check-in time using Google Sheets API
                 const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${column}${rowNumber}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
                 
-                // Send update to Google Sheets in background
-                fetch(updateUrl, {
+                // Send update to Google Sheets
+                const response = await fetch(updateUrl, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -650,19 +752,40 @@
                     body: JSON.stringify({
                         values: [[timeString]]
                     })
-                }).then(response => {
-                    if (response.ok) {
-                        showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
-                    } else {
-                        showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (perubahan tersimpan lokal)`, 'warning');
-                    }
-                }).catch(error => {
-                    console.error('Error updating Google Sheets:', error);
-                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (perubahan tersimpan lokal)`, 'warning');
                 });
+                
+                timeElement.classList.remove('syncing');
+                
+                if (response.ok) {
+                    updateSyncStatus('synced');
+                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
+                    
+                    // Verify the update by refreshing data after a short delay
+                    setTimeout(() => {
+                        loadData(shift);
+                    }, 1000);
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
             } catch (error) {
                 console.error('Error checking in:', error);
+                updateSyncStatus('error', 'Gagal menyimpan check-in');
                 showNotification('Terjadi kesalahan saat check-in: ' + error.message, 'error');
+                
+                // Revert UI changes on error
+                const timeElement = document.getElementById(`time-${shift}-${index}`);
+                const btnElement = document.getElementById(`btn-${shift}-${index}`);
+                
+                timeElement.textContent = '-';
+                timeElement.classList.remove('syncing');
+                btnElement.disabled = false;
+                
+                // Remove delete button if it exists
+                const btnContainer = btnElement.parentElement;
+                const deleteBtn = btnContainer.querySelector('.delete-btn');
+                if (deleteBtn) {
+                    btnContainer.removeChild(deleteBtn);
+                }
             }
         }
 
@@ -676,28 +799,35 @@
                 // Update local data immediately for better UX
                 staffData[shift][index].checkIn = '';
                 
-                // Update UI immediately without loading
-                document.getElementById(`time-${shift}-${index}`).textContent = '-';
-                document.getElementById(`btn-${shift}-${index}`).disabled = false;
+                // Update UI immediately
+                const timeElement = document.getElementById(`time-${shift}-${index}`);
+                const btnElement = document.getElementById(`btn-${shift}-${index}`);
+                
+                timeElement.textContent = '-';
+                timeElement.classList.add('syncing');
+                btnElement.disabled = false;
                 
                 // Remove delete button
-                const btnContainer = document.getElementById(`btn-${shift}-${index}`).parentElement;
+                const btnContainer = btnElement.parentElement;
                 const deleteBtn = btnContainer.querySelector('.delete-btn');
                 if (deleteBtn) {
                     btnContainer.removeChild(deleteBtn);
                 }
                 
+                // Update sync status
+                updateSyncStatus('syncing', 'Menghapus check-in...');
+                
                 // Determine column based on shift
                 let column;
                 switch(shift) {
                     case 'pagi':
-                        column = 'B';
+                        column = 'B'; // Column B for Pagi shift
                         break;
                     case 'siang':
-                        column = 'E';
+                        column = 'E'; // Column E for Siang shift
                         break;
                     case 'malam':
-                        column = 'H';
+                        column = 'H'; // Column H for Malam shift
                         break;
                     default:
                         column = 'B';
@@ -709,8 +839,8 @@
                 // Clear the cell using Google Sheets API
                 const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${column}${rowNumber}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
                 
-                // Send update to Google Sheets in background
-                fetch(updateUrl, {
+                // Send update to Google Sheets
+                const response = await fetch(updateUrl, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -718,19 +848,41 @@
                     body: JSON.stringify({
                         values: [['']]
                     })
-                }).then(response => {
-                    if (response.ok) {
-                        showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
-                    } else {
-                        showNotification(`Data check-in untuk ${staffName} berhasil dihapus (perubahan tersimpan lokal)`, 'warning');
-                    }
-                }).catch(error => {
-                    console.error('Error updating Google Sheets:', error);
-                    showNotification(`Data check-in untuk ${staffName} berhasil dihapus (perubahan tersimpan lokal)`, 'warning');
                 });
+                
+                timeElement.classList.remove('syncing');
+                
+                if (response.ok) {
+                    updateSyncStatus('synced');
+                    showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
+                    
+                    // Verify the update by refreshing data after a short delay
+                    setTimeout(() => {
+                        loadData(shift);
+                    }, 1000);
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
             } catch (error) {
                 console.error('Error deleting attendance:', error);
+                updateSyncStatus('error', 'Gagal menghapus check-in');
                 showNotification('Terjadi kesalahan saat menghapus data: ' + error.message, 'error');
+                
+                // Revert UI changes on error
+                const timeElement = document.getElementById(`time-${shift}-${index}`);
+                const btnElement = document.getElementById(`btn-${shift}-${index}`);
+                
+                timeElement.textContent = staffData[shift][index].checkIn;
+                timeElement.classList.remove('syncing');
+                btnElement.disabled = true;
+                
+                // Add delete button back
+                const btnContainer = btnElement.parentElement;
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.setAttribute('onclick', `deleteAttendance('${shift}', '${staffName}', ${index})`);
+                btnContainer.appendChild(deleteBtn);
             }
         }
 
