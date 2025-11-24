@@ -576,9 +576,9 @@
                                 <tr>
                                     <td>${index + 1}</td>
                                     <td>${staff.name}</td>
-                                    <td class="time-display">${isCheckedIn ? staff.checkIn : '-'}</td>
+                                    <td class="time-display" id="time-${shift}-${index}">${isCheckedIn ? staff.checkIn : '-'}</td>
                                     <td>
-                                        <button class="check-in-btn" ${isCheckedIn ? 'disabled' : ''} onclick="checkIn('${shift}', '${staff.name}', ${index})">
+                                        <button class="check-in-btn" id="btn-${shift}-${index}" ${isCheckedIn ? 'disabled' : ''} onclick="checkIn('${shift}', '${staff.name}', ${index})">
                                             <i class="fas fa-sign-in-alt"></i>Check-in
                                         </button>
                                         ${isCheckedIn ? `<button class="delete-btn" onclick="deleteAttendance('${shift}', '${staff.name}', ${index})"><i class="fas fa-trash"></i></button>` : ''}
@@ -607,6 +607,18 @@
                 // Update local data immediately for better UX
                 staffData[shift][index].checkIn = timeString;
                 
+                // Update UI immediately without loading
+                document.getElementById(`time-${shift}-${index}`).textContent = timeString;
+                document.getElementById(`btn-${shift}-${index}`).disabled = true;
+                
+                // Add delete button
+                const btnContainer = document.getElementById(`btn-${shift}-${index}`).parentElement;
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.setAttribute('onclick', `deleteAttendance('${shift}', '${staffName}', ${index})`);
+                btnContainer.appendChild(deleteBtn);
+                
                 // Determine column based on shift
                 let column;
                 switch(shift) {
@@ -629,7 +641,8 @@
                 // Update the cell with check-in time using Google Sheets API
                 const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${column}${rowNumber}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
                 
-                const updateResponse = await fetch(updateUrl, {
+                // Send update to Google Sheets in background
+                fetch(updateUrl, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -637,17 +650,16 @@
                     body: JSON.stringify({
                         values: [[timeString]]
                     })
-                });
-                
-                if (updateResponse.ok) {
-                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
-                    // Reload data to update the table
-                    loadData(shift);
-                } else {
-                    // If API update fails, still update local display
+                }).then(response => {
+                    if (response.ok) {
+                        showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
+                    } else {
+                        showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (perubahan tersimpan lokal)`, 'warning');
+                    }
+                }).catch(error => {
+                    console.error('Error updating Google Sheets:', error);
                     showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (perubahan tersimpan lokal)`, 'warning');
-                    loadData(shift);
-                }
+                });
             } catch (error) {
                 console.error('Error checking in:', error);
                 showNotification('Terjadi kesalahan saat check-in: ' + error.message, 'error');
@@ -663,6 +675,17 @@
             try {
                 // Update local data immediately for better UX
                 staffData[shift][index].checkIn = '';
+                
+                // Update UI immediately without loading
+                document.getElementById(`time-${shift}-${index}`).textContent = '-';
+                document.getElementById(`btn-${shift}-${index}`).disabled = false;
+                
+                // Remove delete button
+                const btnContainer = document.getElementById(`btn-${shift}-${index}`).parentElement;
+                const deleteBtn = btnContainer.querySelector('.delete-btn');
+                if (deleteBtn) {
+                    btnContainer.removeChild(deleteBtn);
+                }
                 
                 // Determine column based on shift
                 let column;
@@ -686,7 +709,8 @@
                 // Clear the cell using Google Sheets API
                 const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${column}${rowNumber}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
                 
-                const updateResponse = await fetch(updateUrl, {
+                // Send update to Google Sheets in background
+                fetch(updateUrl, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -694,17 +718,16 @@
                     body: JSON.stringify({
                         values: [['']]
                     })
-                });
-                
-                if (updateResponse.ok) {
-                    showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
-                    // Reload data to update the table
-                    loadData(shift);
-                } else {
-                    // If API update fails, still update local display
+                }).then(response => {
+                    if (response.ok) {
+                        showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
+                    } else {
+                        showNotification(`Data check-in untuk ${staffName} berhasil dihapus (perubahan tersimpan lokal)`, 'warning');
+                    }
+                }).catch(error => {
+                    console.error('Error updating Google Sheets:', error);
                     showNotification(`Data check-in untuk ${staffName} berhasil dihapus (perubahan tersimpan lokal)`, 'warning');
-                    loadData(shift);
-                }
+                });
             } catch (error) {
                 console.error('Error deleting attendance:', error);
                 showNotification('Terjadi kesalahan saat menghapus data: ' + error.message, 'error');
