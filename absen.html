@@ -1,370 +1,1242 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Absensi Staff</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Staff</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --danger-color: #ea4335;
+            --warning-color: #fbbc05;
+            --dark-color: #202124;
+            --light-color: #f8f9fa;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
 
-    :root {
-      --primary-color: #4A90E2;
-      --secondary-color: #F5F7FA;
-      --text-color: #333;
-      --border-color: #DDD;
-      --success-color: #5CB85C;
-      --danger-color: #D9534F;
-      --shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: var(--secondary-color);
-      margin: 0;
-      padding: 20px;
-      color: var(--text-color);
-    }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f5f5;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background-color: #fff;
-      padding: 20px 30px;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-    }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-    header {
-      text-align: center;
-      border-bottom: 2px solid var(--primary-color);
-      padding-bottom: 20px;
-      margin-bottom: 20px;
-    }
+        header {
+            background-color: white;
+            box-shadow: var(--box-shadow);
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-radius: var(--border-radius);
+        }
 
-    header h1 {
-      margin: 0;
-      color: var(--primary-color);
-      font-weight: 700;
-    }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
 
-    .shift-selector {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 25px;
-    }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    .shift-btn {
-      padding: 10px 25px;
-      border: none;
-      background-color: #E0E0E0;
-      color: var(--text-color);
-      font-size: 16px;
-      font-weight: 500;
-      cursor: pointer;
-      border-radius: 5px;
-      transition: background-color 0.3s, color 0.3s;
-    }
+        .logo i {
+            font-size: 28px;
+            color: var(--primary-color);
+        }
 
-    .shift-btn.active {
-      background-color: var(--primary-color);
-      color: white;
-    }
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
 
-    .shift-btn:hover:not(.active) {
-      background-color: #C0C0C0;
-    }
+        .date-time {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
 
-    .shift-container {
-      display: none;
-    }
+        .current-date {
+            font-size: 16px;
+            font-weight: 500;
+        }
 
-    .shift-container.active {
-      display: block;
-      animation: fadeIn 0.5s;
-    }
+        .current-time {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+        .config-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
+        .config-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
 
-    th, td {
-      padding: 12px 15px;
-      text-align: left;
-      border-bottom: 1px solid var(--border-color);
-    }
+        .config-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            transition: var(--transition);
+        }
 
-    thead th {
-      background-color: var(--primary-color);
-      color: white;
-      font-weight: 500;
-    }
+        .config-tab:hover {
+            color: var(--primary-color);
+        }
 
-    tbody tr:hover {
-      background-color: var(--secondary-color);
-    }
+        .config-tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
 
-    .action-btn {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background-color 0.3s;
-    }
+        .config-content {
+            display: none;
+        }
 
-    .checkin-btn {
-      background-color: var(--success-color);
-      color: white;
-    }
+        .config-content.active {
+            display: block;
+        }
 
-    .checkin-btn:hover {
-      background-color: #4CAE4C;
-    }
+        .api-key-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
 
-    .delete-btn {
-      background-color: var(--danger-color);
-      color: white;
-    }
+        .api-key-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-family: monospace;
+        }
 
-    .delete-btn:hover {
-      background-color: #C9302C;
-    }
+        .api-key-input button {
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
 
-    .time-display {
-      font-weight: 500;
-      color: #555;
-    }
+        .api-key-input button:hover {
+            background-color: #3367d6;
+        }
 
-    .loading {
-      text-align: center;
-      padding: 20px;
-      font-size: 18px;
-    }
-  </style>
+        .instructions {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: var(--border-radius);
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .csv-method {
+            margin-bottom: 15px;
+        }
+
+        .csv-method textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .csv-method button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .csv-method button:hover {
+            background-color: #2a8c43;
+        }
+
+        .debug-info {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            background-color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .tab:hover {
+            background-color: #f0f0f0;
+        }
+
+        .tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .tab i {
+            margin-right: 8px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .table-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .table-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .refresh-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: var(--transition);
+        }
+
+        .refresh-btn:hover {
+            background-color: #2a8c43;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark-color);
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .check-in-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .check-in-btn:hover {
+            background-color: #3367d6;
+        }
+
+        .check-in-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .delete-btn {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+            transition: var(--transition);
+        }
+
+        .delete-btn:hover {
+            background-color: #d33b2c;
+        }
+
+        .time-display {
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 500;
+            box-shadow: var(--box-shadow);
+            z-index: 1000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: var(--secondary-color);
+        }
+
+        .notification.error {
+            background-color: var(--danger-color);
+        }
+
+        .notification.warning {
+            background-color: var(--warning-color);
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #dee2e6;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 500px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-user-clock"></i>
+                    <h1>Sistem Absensi Staff</h1>
+                </div>
+                <div class="date-time">
+                    <div class="current-date" id="currentDate"></div>
+                    <div class="current-time" id="currentTime"></div>
+                </div>
+            </div>
+        </header>
 
-  <div class="container">
-    <header>
-      <h1>Sistem Absensi Staff</h1>
-    </header>
+        <div class="config-container">
+            <h2>Konfigurasi Sumber Data</h2>
+            <div class="config-tabs">
+                <div class="config-tab active" data-tab="api">API Google Sheets</div>
+                <div class="config-tab" data-tab="csv">Import CSV</div>
+                <div class="config-tab" data-tab="debug">Debug Info</div>
+            </div>
+            
+            <div id="api" class="config-content active">
+                <h3>Metode 1: API Google Sheets</h3>
+                <p>Masukkan API Key Google Sheets Anda untuk menghubungkan aplikasi dengan spreadsheet:</p>
+                <div class="api-key-input">
+                    <input type="text" id="apiKeyInput" placeholder="Masukkan API Key Anda di sini">
+                    <button onclick="saveApiKey()">Simpan</button>
+                </div>
+                <div class="instructions">
+                    <h3>Cara Mendapatkan API Key:</h3>
+                    <ol>
+                        <li>Buka <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                        <li>Buat project baru atau pilih project yang sudah ada</li>
+                        <li>Aktifkan Google Sheets API</li>
+                        <li>Buat API Key di bagian "Credentials"</li>
+                        <li>Bagikan spreadsheet Anda dengan izin "Anyone with the link can view"</li>
+                        <li>Atur izin API Key untuk mengizinkan akses dari domain Anda</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div id="csv" class="config-content">
+                <h3>Metode 2: Import CSV</h3>
+                <p>Impor data dari Google Sheets dengan menyalin dan menempel data CSV:</p>
+                <div class="csv-method">
+                    <p>1. Buka Google Sheets Anda</p>
+                    <p>2. Pilih File > Download > Comma-separated values (.csv)</p>
+                    <p>3. Buka file CSV dan salin semua isinya</p>
+                    <p>4. Tempel di bawah ini:</p>
+                    <textarea id="csvData" placeholder="Tempel data CSV Anda di sini..."></textarea>
+                    <button onclick="importCsvData()">Import Data</button>
+                </div>
+            </div>
+            
+            <div id="debug" class="config-content">
+                <h3>Debug Information</h3>
+                <p>Informasi debug untuk membantu mengidentifikasi masalah:</p>
+                <div class="debug-info" id="debugInfo">
+                    Menunggu informasi debug...
+                </div>
+                <button onclick="testConnection()" style="margin-top: 10px; padding: 10px 20px; background-color: var(--warning-color); color: white; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 500;">
+                    Test Connection
+                </button>
+            </div>
+        </div>
 
-    <main>
-      <nav class="shift-selector">
-        <button class="shift-btn active" onclick="showShift('pagi')">Shift Pagi</button>
-        <button class="shift-btn" onclick="showShift('siang')">Shift Siang</button>
-        <button class="shift-btn" onclick="showShift('malam')">Shift Malam</button>
-      </nav>
+        <main>
+            <div class="tabs">
+                <button class="tab active" data-shift="pagi">
+                    <i class="fas fa-sun"></i>Shift Pagi
+                </button>
+                <button class="tab" data-shift="siang">
+                    <i class="fas fa-cloud-sun"></i>Shift Siang
+                </button>
+                <button class="tab" data-shift="malam">
+                    <i class="fas fa-moon"></i>Shift Malam
+                </button>
+            </div>
 
-      <div id="pagi-container" class="shift-container active">
-        <h2>Daftar Absensi Shift Pagi</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Nama Staff</th>
-              <th>Time</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="pagi-table-body">
-            <!-- Data akan diisi oleh JavaScript -->
-          </tbody>
-        </table>
-      </div>
+            <div id="pagi" class="tab-content active">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Daftar Absensi Shift Pagi</div>
+                        <button class="refresh-btn" onclick="loadData('pagi')">
+                            <i class="fas fa-sync-alt"></i>Refresh
+                        </button>
+                    </div>
+                    <div id="pagiTableContainer">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-      <div id="siang-container" class="shift-container">
-        <h2>Daftar Absensi Shift Siang</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Nama Staff</th>
-              <th>Time</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="siang-table-body">
-            <!-- Data akan diisi oleh JavaScript -->
-          </tbody>
-        </table>
-      </div>
+            <div id="siang" class="tab-content">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Daftar Absensi Shift Siang</div>
+                        <button class="refresh-btn" onclick="loadData('siang')">
+                            <i class="fas fa-sync-alt"></i>Refresh
+                        </button>
+                    </div>
+                    <div id="siangTableContainer">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-      <div id="malam-container" class="shift-container">
-        <h2>Daftar Absensi Shift Malam</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Nama Staff</th>
-              <th>Time</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="malam-table-body">
-            <!-- Data akan diisi oleh JavaScript -->
-          </tbody>
-        </table>
-      </div>
-    </main>
-  </div>
+            <div id="malam" class="tab-content">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Daftar Absensi Shift Malam</div>
+                        <button class="refresh-btn" onclick="loadData('malam')">
+                            <i class="fas fa-sync-alt"></i>Refresh
+                        </button>
+                    </div>
+                    <div id="malamTableContainer">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
 
-  <script>
-    let allStaffData = {};
+        <footer class="footer">
+            <p>&copy; 2023 Sistem Absensi Staff. All rights reserved.</p>
+        </footer>
+    </div>
 
-    // Fungsi untuk menampilkan shift yang dipilih
-    function showShift(shiftName) {
-      // Sembunyikan semua container
-      document.querySelectorAll('.shift-container').forEach(container => {
-        container.classList.remove('active');
-      });
-      // Hapus class active dari semua tombol
-      document.querySelectorAll('.shift-btn').forEach(btn => {
-        btn.classList.remove('active');
-      });
+    <div id="notification" class="notification"></div>
 
-      // Tampilkan container yang dipilih
-      document.getElementById(`${shiftName}-container`).classList.add('active');
-      // Tandai tombol yang dipilih
-      event.target.classList.add('active');
-    }
+    <script>
+        // Google Sheets Configuration
+        const SPREADSHEET_ID = '18XfgBl-55086BTNlRiOdhLP3s-Th9ZllKBnnafE30gg';
+        const SHEET_ID = '439919036';
+        let API_KEY = localStorage.getItem('googleSheetsApiKey') || '';
+        let dataSource = localStorage.getItem('dataSource') || 'api'; // 'api' or 'csv'
+        let csvData = localStorage.getItem('csvData') || '';
 
-    // Fungsi untuk membuat baris tabel
-    function createTableRow(staff, shiftKey) {
-      const row = document.createElement('tr');
-      const nameCell = document.createElement('td');
-      const timeCell = document.createElement('td');
-      const actionCell = document.createElement('td');
+        // Sample data for fallback
+        const sampleData = {
+            pagi: [
+                { name: 'Ahmad Rizki', checkIn: '' },
+                { name: 'Siti Nurhaliza', checkIn: '' },
+                { name: 'Budi Santoso', checkIn: '' },
+                { name: 'Dewi Lestari', checkIn: '' },
+                { name: 'Eko Prasetyo', checkIn: '' }
+            ],
+            siang: [
+                { name: 'Fajar Kurniawan', checkIn: '' },
+                { name: 'Gita Savitri', checkIn: '' },
+                { name: 'Hadi Pranoto', checkIn: '' },
+                { name: 'Indah Permata', checkIn: '' },
+                { name: 'Joko Widodo', checkIn: '' }
+            ],
+            malam: [
+                { name: 'Kartika Sari', checkIn: '' },
+                { name: 'Lukman Hakim', checkIn: '' },
+                { name: 'Maya Putri', checkIn: '' },
+                { name: 'Nanda Pratama', checkIn: '' },
+                { name: 'Omar Hakim', checkIn: '' }
+            ]
+        };
 
-      nameCell.textContent = staff.name;
-      timeCell.textContent = staff.time;
-      timeCell.className = 'time-display';
-      timeCell.id = `time-${shiftKey}-${staff.name.replace(/\s+/g, '-')}`;
+        // Current active shift
+        let currentShift = 'pagi';
 
-      const button = document.createElement('button');
-      button.className = 'action-btn';
-      button.id = `btn-${shiftKey}-${staff.name.replace(/\s+/g, '-')}`;
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update date and time
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
 
-      if (staff.time) {
-        button.textContent = 'Hapus';
-        button.className += ' delete-btn';
-        button.onclick = () => handleDelete(shiftKey.toUpperCase(), staff.name);
-      } else {
-        button.textContent = 'Check-in';
-        button.className += ' checkin-btn';
-        button.onclick = () => handleCheckIn(shiftKey.toUpperCase(), staff.name);
-      }
-      
-      actionCell.appendChild(button);
+            // Setup tab switching
+            setupTabs();
+            setupConfigTabs();
 
-      row.appendChild(nameCell);
-      row.appendChild(timeCell);
-      row.appendChild(actionCell);
+            // Check if API key is available
+            if (API_KEY) {
+                document.getElementById('apiKeyInput').value = API_KEY;
+            }
+            
+            if (csvData) {
+                document.getElementById('csvData').value = csvData;
+            }
+            
+            // Load initial data
+            loadData('pagi');
+            
+            // Update debug info
+            updateDebugInfo();
+        });
 
-      return row;
-    }
-
-    // Fungsi untuk mempopulate tabel dengan data
-    function populateTables(data) {
-      allStaffData = data;
-      const shifts = ['pagi', 'siang', 'malam'];
-
-      shifts.forEach(shift => {
-        const tableBody = document.getElementById(`${shift}-table-body`);
-        tableBody.innerHTML = ''; // Kosongkan tabel sebelum mengisi
-
-        if (data[shift] && data[shift].length > 0) {
-          data[shift].forEach(staff => {
-            tableBody.appendChild(createTableRow(staff, shift));
-          });
-        } else {
-          tableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Tidak ada data staff untuk shift ini.</td></tr>';
+        // Setup config tabs
+        function setupConfigTabs() {
+            const tabs = document.querySelectorAll('.config-tab');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs and contents
+                    document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.config-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
         }
-      });
-    }
 
-    // Handler untuk tombol Check-in
-    function handleCheckIn(shift, staffName) {
-      const buttonId = `btn-${shift.toLowerCase()}-${staffName.replace(/\s+/g, '-')}`;
-      const button = document.getElementById(buttonId);
-      button.disabled = true;
-      button.textContent = 'Memproses...';
+        // Save API Key
+        function saveApiKey() {
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            API_KEY = apiKeyInput.value.trim();
+            
+            if (API_KEY) {
+                localStorage.setItem('googleSheetsApiKey', API_KEY);
+                localStorage.setItem('dataSource', 'api');
+                dataSource = 'api';
+                showNotification('API Key berhasil disimpan', 'success');
+                // Reload data with new API key
+                loadData(currentShift);
+                updateDebugInfo();
+            } else {
+                showNotification('API Key tidak boleh kosong', 'error');
+            }
+        }
 
-      google.script.run
-        .withSuccessHandler(response => {
-          if (response.success) {
-            const timeId = `time-${shift.toLowerCase()}-${staffName.replace(/\s+/g, '-')}`;
-            const timeCell = document.getElementById(timeId);
-            timeCell.textContent = response.time;
+        // Import CSV data
+        function importCsvData() {
+            const csvDataInput = document.getElementById('csvData');
+            const data = csvDataInput.value.trim();
+            
+            if (data) {
+                localStorage.setItem('csvData', data);
+                localStorage.setItem('dataSource', 'csv');
+                csvData = data;
+                dataSource = 'csv';
+                showNotification('Data CSV berhasil diimpor', 'success');
+                // Reload data with new CSV data
+                loadData(currentShift);
+                updateDebugInfo();
+            } else {
+                showNotification('Data CSV tidak boleh kosong', 'error');
+            }
+        }
 
-            button.textContent = 'Hapus';
-            button.className = 'action-btn delete-btn';
-            button.onclick = () => handleDelete(shift, staffName);
-            button.disabled = false;
-          } else {
-            alert('Gagal check-in: ' + response.message);
-            button.disabled = false;
-            button.textContent = 'Check-in';
-          }
-        })
-        .withFailureHandler(error => {
-          alert('Terjadi kesalahan. Silakan coba lagi. Error: ' + error.message);
-          button.disabled = false;
-          button.textContent = 'Check-in';
-        })
-        .recordCheckIn(shift, staffName);
-    }
+        // Test connection to Google Sheets
+        async function testConnection() {
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.textContent = 'Menguji koneksi...';
+            
+            try {
+                // Test with public CSV export
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_ID}`;
+                const response = await fetch(csvUrl);
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    debugInfo.textContent = `Koneksi berhasil!\n\nURL: ${csvUrl}\nStatus: ${response.status}\nData preview:\n${data.substring(0, 500)}...`;
+                    showNotification('Koneksi ke Google Sheets berhasil', 'success');
+                } else {
+                    debugInfo.textContent = `Koneksi gagal!\n\nURL: ${csvUrl}\nStatus: ${response.status}\nStatus Text: ${response.statusText}`;
+                    showNotification('Koneksi ke Google Sheets gagal', 'error');
+                }
+            } catch (error) {
+                debugInfo.textContent = `Error: ${error.message}`;
+                showNotification('Terjadi kesalahan saat menguji koneksi', 'error');
+            }
+        }
 
-    // Handler untuk tombol Hapus
-    function handleDelete(shift, staffName) {
-      if (!confirm(`Apakah Anda yakin ingin menghapus absensi untuk ${staffName}?`)) {
-        return;
-      }
+        // Update debug info
+        function updateDebugInfo() {
+            const debugInfo = document.getElementById('debugInfo');
+            const info = {
+                'Spreadsheet ID': SPREADSHEET_ID,
+                'Sheet ID': SHEET_ID,
+                'API Key': API_KEY ? `${API_KEY.substring(0, 10)}...` : 'Not set',
+                'Data Source': dataSource,
+                'CSV Data Length': csvData ? csvData.length : 0,
+                'Browser': navigator.userAgent,
+                'Current URL': window.location.href
+            };
+            
+            let infoText = 'Debug Information:\n\n';
+            for (const [key, value] of Object.entries(info)) {
+                infoText += `${key}: ${value}\n`;
+            }
+            
+            debugInfo.textContent = infoText;
+        }
 
-      const buttonId = `btn-${shift.toLowerCase()}-${staffName.replace(/\s+/g, '-')}`;
-      const button = document.getElementById(buttonId);
-      button.disabled = true;
-      button.textContent = 'Menghapus...';
+        // Update current date and time
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('id-ID', dateOptions);
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('id-ID', timeOptions);
+        }
 
-      google.script.run
-        .withSuccessHandler(response => {
-          if (response.success) {
-            const timeId = `time-${shift.toLowerCase()}-${staffName.replace(/\s+/g, '-')}`;
-            const timeCell = document.getElementById(timeId);
-            timeCell.textContent = '';
+        // Setup tab switching
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs and contents
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    this.classList.add('active');
+                    const shift = this.getAttribute('data-shift');
+                    document.getElementById(shift).classList.add('active');
+                    
+                    // Update current shift and load data
+                    currentShift = shift;
+                    loadData(shift);
+                });
+            });
+        }
 
-            button.textContent = 'Check-in';
-            button.className = 'action-btn checkin-btn';
-            button.onclick = () => handleCheckIn(shift, staffName);
-            button.disabled = false;
-          } else {
-            alert('Gagal menghapus: ' + response.message);
-            button.disabled = false;
-            button.textContent = 'Hapus';
-          }
-        })
-        .withFailureHandler(error => {
-          alert('Terjadi kesalahan. Silakan coba lagi. Error: ' + error.message);
-          button.disabled = false;
-          button.textContent = 'Hapus';
-        })
-        .deleteCheckIn(shift, staffName);
-    }
+        // Parse CSV data
+        function parseCsvData(csvText) {
+            const lines = csvText.split('\n');
+            const result = {
+                pagi: [],
+                siang: [],
+                malam: []
+            };
+            
+            // Skip header row if exists
+            const startIndex = lines[0].includes('Nama') ? 1 : 0;
+            
+            for (let i = startIndex; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                
+                // Extract data based on column positions
+                if (values[0]) { // Column A - Nama Pagi
+                    result.pagi.push({
+                        name: values[0],
+                        checkIn: values[1] || ''
+                    });
+                }
+                
+                if (values[3]) { // Column D - Nama Siang
+                    result.siang.push({
+                        name: values[3],
+                        checkIn: values[4] || ''
+                    });
+                }
+                
+                if (values[6]) { // Column G - Nama Malam
+                    result.malam.push({
+                        name: values[6],
+                        checkIn: values[7] || ''
+                    });
+                }
+            }
+            
+            return result;
+        }
 
-    // Panggil fungsi untuk mengambil data saat halaman dimuat
-    window.onload = function() {
-      google.script.run
-        .withSuccessHandler(populateTables)
-        .withFailureHandler(error => {
-          document.body.innerHTML = `<div class="container loading">Gagal memuat data. Error: ${error.message}</div>`;
-        })
-        .getStaffAndAttendanceData();
-    };
-  </script>
+        // Load data from Google Sheets
+        async function loadData(shift) {
+            const container = document.getElementById(`${shift}TableContainer`);
+            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            try {
+                let data;
+                
+                if (dataSource === 'csv' && csvData) {
+                    // Use CSV data
+                    const parsedData = parseCsvData(csvData);
+                    data = parsedData[shift];
+                    
+                    if (!data || data.length === 0) {
+                        container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Tidak ada data staff untuk shift ini</p></div>';
+                        return;
+                    }
+                } else if (dataSource === 'api' && API_KEY) {
+                    // Try API method first
+                    try {
+                        data = await loadFromApi(shift);
+                    } catch (apiError) {
+                        console.error('API method failed, trying CSV export:', apiError);
+                        // Fallback to CSV export
+                        data = await loadFromCsvExport(shift);
+                    }
+                } else {
+                    // Try CSV export as default
+                    try {
+                        data = await loadFromCsvExport(shift);
+                    } catch (csvError) {
+                        console.error('CSV export failed, using sample data:', csvError);
+                        // Fallback to sample data
+                        data = sampleData[shift];
+                        showNotification('Menggunakan data contoh. Masukkan API Key atau impor data CSV untuk menggunakan data Anda.', 'warning');
+                    }
+                }
+                
+                // Create table
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Staff</th>
+                            <th>Check-in</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map((staff, index) => {
+                            const isCheckedIn = staff.checkIn !== '';
+                            
+                            return `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${staff.name}</td>
+                                    <td class="time-display">${isCheckedIn ? staff.checkIn : '-'}</td>
+                                    <td>
+                                        <button class="check-in-btn" ${isCheckedIn ? 'disabled' : ''} onclick="checkIn('${shift}', '${staff.name}', ${index})">
+                                            <i class="fas fa-sign-in-alt"></i>Check-in
+                                        </button>
+                                        ${isCheckedIn ? `<button class="delete-btn" onclick="deleteAttendance('${shift}', '${staff.name}', ${index})"><i class="fas fa-trash"></i></button>` : ''}
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                `;
+                
+                container.innerHTML = '';
+                container.appendChild(table);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Terjadi kesalahan saat memuat data. Silakan coba lagi.</p></div>';
+                showNotification('Terjadi kesalahan saat memuat data: ' + error.message, 'error');
+            }
+        }
+
+        // Load data from API
+        async function loadFromApi(shift) {
+            // Determine column range based on shift
+            let nameColumnRange, timeColumnRange;
+            switch(shift) {
+                case 'pagi':
+                    nameColumnRange = 'A2:A';
+                    timeColumnRange = 'B2:B';
+                    break;
+                case 'siang':
+                    nameColumnRange = 'D2:D';
+                    timeColumnRange = 'E2:E';
+                    break;
+                case 'malam':
+                    nameColumnRange = 'G2:G';
+                    timeColumnRange = 'H2:H';
+                    break;
+                default:
+                    nameColumnRange = 'A2:A';
+                    timeColumnRange = 'B2:B';
+            }
+            
+            // Fetch names from Google Sheets
+            const nameResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${nameColumnRange}?key=${API_KEY}`);
+            
+            if (!nameResponse.ok) {
+                throw new Error(`HTTP error! status: ${nameResponse.status}`);
+            }
+            
+            const nameData = await nameResponse.json();
+            
+            // Fetch times from Google Sheets
+            const timeResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${timeColumnRange}?key=${API_KEY}`);
+            
+            if (!timeResponse.ok) {
+                throw new Error(`HTTP error! status: ${timeResponse.status}`);
+            }
+            
+            const timeData = await timeResponse.json();
+            
+            // Combine data
+            const result = [];
+            if (nameData.values) {
+                for (let i = 0; i < nameData.values.length; i++) {
+                    const name = nameData.values[i][0] || '';
+                    const time = timeData.values && timeData.values[i] ? timeData.values[i][0] : '';
+                    
+                    if (name) {
+                        result.push({
+                            name: name,
+                            checkIn: time
+                        });
+                    }
+                }
+            }
+            
+            return result;
+        }
+
+        // Load data from CSV export
+        async function loadFromCsvExport(shift) {
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_ID}`;
+            
+            const response = await fetch(csvUrl);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const csvText = await response.text();
+            const parsedData = parseCsvData(csvText);
+            
+            return parsedData[shift];
+        }
+
+        // Check in a staff member
+        async function checkIn(shift, staffName, index) {
+            try {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                
+                if (dataSource === 'csv') {
+                    // Update CSV data
+                    const parsedData = parseCsvData(csvData);
+                    parsedData[shift][index].checkIn = timeString;
+                    
+                    // Rebuild CSV from updated data
+                    let newCsvData = 'Nama Pagi,Check-in Pagi,Nama Siang,Check-in Siang,Nama Malam,Check-in Malam\n';
+                    
+                    const maxLength = Math.max(
+                        parsedData.pagi.length,
+                        parsedData.siang.length,
+                        parsedData.malam.length
+                    );
+                    
+                    for (let i = 0; i < maxLength; i++) {
+                        const pagi = parsedData.pagi[i] || { name: '', checkIn: '' };
+                        const siang = parsedData.siang[i] || { name: '', checkIn: '' };
+                        const malam = parsedData.malam[i] || { name: '', checkIn: '' };
+                        
+                        newCsvData += `"${pagi.name}","${pagi.checkIn}","${siang.name}","${siang.checkIn}","${malam.name}","${malam.checkIn}"\n`;
+                    }
+                    
+                    csvData = newCsvData;
+                    localStorage.setItem('csvData', csvData);
+                    document.getElementById('csvData').value = csvData;
+                    
+                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
+                    loadData(shift);
+                } else if (dataSource === 'api' && API_KEY) {
+                    // Determine row and column based on shift and staff name
+                    let nameColumnRange, timeColumn;
+                    switch(shift) {
+                        case 'pagi':
+                            nameColumnRange = 'A2:A';
+                            timeColumn = 'B';
+                            break;
+                        case 'siang':
+                            nameColumnRange = 'D2:D';
+                            timeColumn = 'E';
+                            break;
+                        case 'malam':
+                            nameColumnRange = 'G2:G';
+                            timeColumn = 'H';
+                            break;
+                        default:
+                            nameColumnRange = 'A2:A';
+                            timeColumn = 'B';
+                    }
+                    
+                    // Find the row of the staff member
+                    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${nameColumnRange}?key=${API_KEY}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    let rowIndex = -1;
+                    if (data.values) {
+                        for (let i = 0; i < data.values.length; i++) {
+                            if (data.values[i][0] === staffName) {
+                                rowIndex = i + 2; // +2 because rows are 1-indexed and we start from row 2
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (rowIndex === -1) {
+                        showNotification('Staff tidak ditemukan', 'error');
+                        return;
+                    }
+                    
+                    // Update the cell with check-in time
+                    const updateResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${timeColumn}${rowIndex}?valueInputOption=USER_ENTERED&key=${API_KEY}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            values: [[timeString]]
+                        })
+                    });
+                    
+                    if (updateResponse.ok) {
+                        showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
+                        loadData(shift); // Reload data to update the table
+                    } else {
+                        throw new Error(`HTTP error! status: ${updateResponse.status}`);
+                    }
+                } else {
+                    // Update sample data
+                    const staff = sampleData[shift].find(s => s.name === staffName);
+                    if (staff) {
+                        staff.checkIn = timeString;
+                        showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (data contoh)`, 'success');
+                        loadData(shift);
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking in:', error);
+                showNotification('Terjadi kesalahan saat check-in: ' + error.message, 'error');
+            }
+        }
+
+        // Delete attendance record
+        async function deleteAttendance(shift, staffName, index) {
+            if (!confirm(`Apakah Anda yakin ingin menghapus data check-in untuk ${staffName}?`)) {
+                return;
+            }
+            
+            try {
+                if (dataSource === 'csv') {
+                    // Update CSV data
+                    const parsedData = parseCsvData(csvData);
+                    parsedData[shift][index].checkIn = '';
+                    
+                    // Rebuild CSV from updated data
+                    let newCsvData = 'Nama Pagi,Check-in Pagi,Nama Siang,Check-in Siang,Nama Malam,Check-in Malam\n';
+                    
+                    const maxLength = Math.max(
+                        parsedData.pagi.length,
+                        parsedData.siang.length,
+                        parsedData.malam.length
+                    );
+                    
+                    for (let i = 0; i < maxLength; i++) {
+                        const pagi = parsedData.pagi[i] || { name: '', checkIn: '' };
+                        const siang = parsedData.siang[i] || { name: '', checkIn: '' };
+                        const malam = parsedData.malam[i] || { name: '', checkIn: '' };
+                        
+                        newCsvData += `"${pagi.name}","${pagi.checkIn}","${siang.name}","${siang.checkIn}","${malam.name}","${malam.checkIn}"\n`;
+                    }
+                    
+                    csvData = newCsvData;
+                    localStorage.setItem('csvData', csvData);
+                    document.getElementById('csvData').value = csvData;
+                    
+                    showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
+                    loadData(shift);
+                } else if (dataSource === 'api' && API_KEY) {
+                    // Determine row and column based on shift and staff name
+                    let nameColumnRange, timeColumn;
+                    switch(shift) {
+                        case 'pagi':
+                            nameColumnRange = 'A2:A';
+                            timeColumn = 'B';
+                            break;
+                        case 'siang':
+                            nameColumnRange = 'D2:D';
+                            timeColumn = 'E';
+                            break;
+                        case 'malam':
+                            nameColumnRange = 'G2:G';
+                            timeColumn = 'H';
+                            break;
+                        default:
+                            nameColumnRange = 'A2:A';
+                            timeColumn = 'B';
+                    }
+                    
+                    // Find the row of the staff member
+                    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${nameColumnRange}?key=${API_KEY}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    let rowIndex = -1;
+                    if (data.values) {
+                        for (let i = 0; i < data.values.length; i++) {
+                            if (data.values[i][0] === staffName) {
+                                rowIndex = i + 2; // +2 because rows are 1-indexed and we start from row 2
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (rowIndex === -1) {
+                        showNotification('Staff tidak ditemukan', 'error');
+                        return;
+                    }
+                    
+                    // Clear the cell
+                    const updateResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${timeColumn}${rowIndex}?valueInputOption=USER_ENTERED&key=${API_KEY}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            values: [['']]
+                        })
+                    });
+                    
+                    if (updateResponse.ok) {
+                        showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
+                        loadData(shift); // Reload data to update the table
+                    } else {
+                        throw new Error(`HTTP error! status: ${updateResponse.status}`);
+                    }
+                } else {
+                    // Update sample data
+                    const staff = sampleData[shift].find(s => s.name === staffName);
+                    if (staff) {
+                        staff.checkIn = '';
+                        showNotification(`Data check-in untuk ${staffName} berhasil dihapus (data contoh)`, 'success');
+                        loadData(shift);
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting attendance:', error);
+                showNotification('Terjadi kesalahan saat menghapus data: ' + error.message, 'error');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+    </script>
 </body>
 </html>
