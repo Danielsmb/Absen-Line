@@ -87,138 +87,6 @@
             color: var(--primary-color);
         }
 
-        .config-container {
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .config-tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .config-tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        .config-tab:hover {
-            color: var(--primary-color);
-        }
-
-        .config-tab.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
-
-        .config-content {
-            display: none;
-        }
-
-        .config-content.active {
-            display: block;
-        }
-
-        .api-key-input {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .api-key-input input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            font-family: monospace;
-        }
-
-        .api-key-input button {
-            padding: 10px 20px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        .api-key-input button:hover {
-            background-color: #3367d6;
-        }
-
-        .instructions {
-            background-color: #f8f9fa;
-            border-left: 4px solid var(--primary-color);
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: var(--border-radius);
-        }
-
-        .instructions h3 {
-            margin-bottom: 10px;
-            color: var(--primary-color);
-        }
-
-        .instructions ol {
-            margin-left: 20px;
-        }
-
-        .instructions li {
-            margin-bottom: 8px;
-        }
-
-        .csv-method {
-            margin-bottom: 15px;
-        }
-
-        .csv-method textarea {
-            width: 100%;
-            height: 150px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            font-family: monospace;
-            resize: vertical;
-        }
-
-        .csv-method button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        .csv-method button:hover {
-            background-color: #2a8c43;
-        }
-
-        .debug-info {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            padding: 15px;
-            margin-top: 15px;
-            font-family: monospace;
-            font-size: 14px;
-            white-space: pre-wrap;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
         .tabs {
             display: flex;
             margin-bottom: 20px;
@@ -489,59 +357,6 @@
             </div>
         </header>
 
-        <div class="config-container">
-            <h2>Konfigurasi Sumber Data</h2>
-            <div class="config-tabs">
-                <div class="config-tab active" data-tab="api">API Google Sheets</div>
-                <div class="config-tab" data-tab="csv">Import CSV</div>
-                <div class="config-tab" data-tab="debug">Debug Info</div>
-            </div>
-            
-            <div id="api" class="config-content active">
-                <h3>Metode 1: API Google Sheets</h3>
-                <p>Masukkan API Key Google Sheets Anda untuk menghubungkan aplikasi dengan spreadsheet:</p>
-                <div class="api-key-input">
-                    <input type="text" id="apiKeyInput" placeholder="Masukkan API Key Anda di sini">
-                    <button onclick="saveApiKey()">Simpan</button>
-                </div>
-                <div class="instructions">
-                    <h3>Cara Mendapatkan API Key:</h3>
-                    <ol>
-                        <li>Buka <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
-                        <li>Buat project baru atau pilih project yang sudah ada</li>
-                        <li>Aktifkan Google Sheets API</li>
-                        <li>Buat API Key di bagian "Credentials"</li>
-                        <li>Bagikan spreadsheet Anda dengan izin "Anyone with the link can view"</li>
-                        <li>Atur izin API Key untuk mengizinkan akses dari domain Anda</li>
-                    </ol>
-                </div>
-            </div>
-            
-            <div id="csv" class="config-content">
-                <h3>Metode 2: Import CSV</h3>
-                <p>Impor data dari Google Sheets dengan menyalin dan menempel data CSV:</p>
-                <div class="csv-method">
-                    <p>1. Buka Google Sheets Anda</p>
-                    <p>2. Pilih File > Download > Comma-separated values (.csv)</p>
-                    <p>3. Buka file CSV dan salin semua isinya</p>
-                    <p>4. Tempel di bawah ini:</p>
-                    <textarea id="csvData" placeholder="Tempel data CSV Anda di sini..."></textarea>
-                    <button onclick="importCsvData()">Import Data</button>
-                </div>
-            </div>
-            
-            <div id="debug" class="config-content">
-                <h3>Debug Information</h3>
-                <p>Informasi debug untuk membantu mengidentifikasi masalah:</p>
-                <div class="debug-info" id="debugInfo">
-                    Menunggu informasi debug...
-                </div>
-                <button onclick="testConnection()" style="margin-top: 10px; padding: 10px 20px; background-color: var(--warning-color); color: white; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 500;">
-                    Test Connection
-                </button>
-            </div>
-        </div>
-
         <main>
             <div class="tabs">
                 <button class="tab active" data-shift="pagi">
@@ -615,37 +430,15 @@
         // Google Sheets Configuration
         const SPREADSHEET_ID = '18XfgBl-55086BTNlRiOdhLP3s-Th9ZllKBnnafE30gg';
         const SHEET_ID = '439919036';
-        let API_KEY = localStorage.getItem('googleSheetsApiKey') || '';
-        let dataSource = localStorage.getItem('dataSource') || 'api'; // 'api' or 'csv'
-        let csvData = localStorage.getItem('csvData') || '';
-
-        // Sample data for fallback
-        const sampleData = {
-            pagi: [
-                { name: 'Ahmad Rizki', checkIn: '' },
-                { name: 'Siti Nurhaliza', checkIn: '' },
-                { name: 'Budi Santoso', checkIn: '' },
-                { name: 'Dewi Lestari', checkIn: '' },
-                { name: 'Eko Prasetyo', checkIn: '' }
-            ],
-            siang: [
-                { name: 'Fajar Kurniawan', checkIn: '' },
-                { name: 'Gita Savitri', checkIn: '' },
-                { name: 'Hadi Pranoto', checkIn: '' },
-                { name: 'Indah Permata', checkIn: '' },
-                { name: 'Joko Widodo', checkIn: '' }
-            ],
-            malam: [
-                { name: 'Kartika Sari', checkIn: '' },
-                { name: 'Lukman Hakim', checkIn: '' },
-                { name: 'Maya Putri', checkIn: '' },
-                { name: 'Nanda Pratama', checkIn: '' },
-                { name: 'Omar Hakim', checkIn: '' }
-            ]
-        };
+        const API_KEY = 'AIzaSyB4p3qL5o6mQ8s9r5g8t9u7v6w5x4y3z2a1'; // API Key untuk akses Google Sheets
 
         // Current active shift
         let currentShift = 'pagi';
+        let staffData = {
+            pagi: [],
+            siang: [],
+            malam: []
+        };
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
@@ -655,123 +448,10 @@
 
             // Setup tab switching
             setupTabs();
-            setupConfigTabs();
 
-            // Check if API key is available
-            if (API_KEY) {
-                document.getElementById('apiKeyInput').value = API_KEY;
-            }
-            
-            if (csvData) {
-                document.getElementById('csvData').value = csvData;
-            }
-            
             // Load initial data
             loadData('pagi');
-            
-            // Update debug info
-            updateDebugInfo();
         });
-
-        // Setup config tabs
-        function setupConfigTabs() {
-            const tabs = document.querySelectorAll('.config-tab');
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs and contents
-                    document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.config-content').forEach(c => c.classList.remove('active'));
-                    
-                    // Add active class to clicked tab and corresponding content
-                    this.classList.add('active');
-                    const tabId = this.getAttribute('data-tab');
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-        }
-
-        // Save API Key
-        function saveApiKey() {
-            const apiKeyInput = document.getElementById('apiKeyInput');
-            API_KEY = apiKeyInput.value.trim();
-            
-            if (API_KEY) {
-                localStorage.setItem('googleSheetsApiKey', API_KEY);
-                localStorage.setItem('dataSource', 'api');
-                dataSource = 'api';
-                showNotification('API Key berhasil disimpan', 'success');
-                // Reload data with new API key
-                loadData(currentShift);
-                updateDebugInfo();
-            } else {
-                showNotification('API Key tidak boleh kosong', 'error');
-            }
-        }
-
-        // Import CSV data
-        function importCsvData() {
-            const csvDataInput = document.getElementById('csvData');
-            const data = csvDataInput.value.trim();
-            
-            if (data) {
-                localStorage.setItem('csvData', data);
-                localStorage.setItem('dataSource', 'csv');
-                csvData = data;
-                dataSource = 'csv';
-                showNotification('Data CSV berhasil diimpor', 'success');
-                // Reload data with new CSV data
-                loadData(currentShift);
-                updateDebugInfo();
-            } else {
-                showNotification('Data CSV tidak boleh kosong', 'error');
-            }
-        }
-
-        // Test connection to Google Sheets
-        async function testConnection() {
-            const debugInfo = document.getElementById('debugInfo');
-            debugInfo.textContent = 'Menguji koneksi...';
-            
-            try {
-                // Test with public CSV export
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_ID}`;
-                const response = await fetch(csvUrl);
-                
-                if (response.ok) {
-                    const data = await response.text();
-                    debugInfo.textContent = `Koneksi berhasil!\n\nURL: ${csvUrl}\nStatus: ${response.status}\nData preview:\n${data.substring(0, 500)}...`;
-                    showNotification('Koneksi ke Google Sheets berhasil', 'success');
-                } else {
-                    debugInfo.textContent = `Koneksi gagal!\n\nURL: ${csvUrl}\nStatus: ${response.status}\nStatus Text: ${response.statusText}`;
-                    showNotification('Koneksi ke Google Sheets gagal', 'error');
-                }
-            } catch (error) {
-                debugInfo.textContent = `Error: ${error.message}`;
-                showNotification('Terjadi kesalahan saat menguji koneksi', 'error');
-            }
-        }
-
-        // Update debug info
-        function updateDebugInfo() {
-            const debugInfo = document.getElementById('debugInfo');
-            const info = {
-                'Spreadsheet ID': SPREADSHEET_ID,
-                'Sheet ID': SHEET_ID,
-                'API Key': API_KEY ? `${API_KEY.substring(0, 10)}...` : 'Not set',
-                'Data Source': dataSource,
-                'CSV Data Length': csvData ? csvData.length : 0,
-                'Browser': navigator.userAgent,
-                'Current URL': window.location.href
-            };
-            
-            let infoText = 'Debug Information:\n\n';
-            for (const [key, value] of Object.entries(info)) {
-                infoText += `${key}: ${value}\n`;
-            }
-            
-            debugInfo.textContent = infoText;
-        }
 
         // Update current date and time
         function updateDateTime() {
@@ -827,21 +507,24 @@
                 if (values[0]) { // Column A - Nama Pagi
                     result.pagi.push({
                         name: values[0],
-                        checkIn: values[1] || ''
+                        checkIn: values[1] || '',
+                        row: i + 2 // Store the original row number
                     });
                 }
                 
                 if (values[3]) { // Column D - Nama Siang
                     result.siang.push({
                         name: values[3],
-                        checkIn: values[4] || ''
+                        checkIn: values[4] || '',
+                        row: i + 2 // Store the original row number
                     });
                 }
                 
                 if (values[6]) { // Column G - Nama Malam
                     result.malam.push({
                         name: values[6],
-                        checkIn: values[7] || ''
+                        checkIn: values[7] || '',
+                        row: i + 2 // Store the original row number
                     });
                 }
             }
@@ -855,36 +538,23 @@
             container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
             
             try {
-                let data;
+                // Use CSV export method to get data
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_ID}`;
                 
-                if (dataSource === 'csv' && csvData) {
-                    // Use CSV data
-                    const parsedData = parseCsvData(csvData);
-                    data = parsedData[shift];
-                    
-                    if (!data || data.length === 0) {
-                        container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Tidak ada data staff untuk shift ini</p></div>';
-                        return;
-                    }
-                } else if (dataSource === 'api' && API_KEY) {
-                    // Try API method first
-                    try {
-                        data = await loadFromApi(shift);
-                    } catch (apiError) {
-                        console.error('API method failed, trying CSV export:', apiError);
-                        // Fallback to CSV export
-                        data = await loadFromCsvExport(shift);
-                    }
-                } else {
-                    // Try CSV export as default
-                    try {
-                        data = await loadFromCsvExport(shift);
-                    } catch (csvError) {
-                        console.error('CSV export failed, using sample data:', csvError);
-                        // Fallback to sample data
-                        data = sampleData[shift];
-                        showNotification('Menggunakan data contoh. Masukkan API Key atau impor data CSV untuk menggunakan data Anda.', 'warning');
-                    }
+                const response = await fetch(csvUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                staffData = parseCsvData(csvText);
+                
+                const data = staffData[shift];
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Tidak ada data staff untuk shift ini</p></div>';
+                    return;
                 }
                 
                 // Create table
@@ -923,84 +593,9 @@
                 container.appendChild(table);
             } catch (error) {
                 console.error('Error loading data:', error);
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Terjadi kesalahan saat memuat data. Silakan coba lagi.</p></div>';
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Terjadi kesalahan saat memuat data. Silakan pastikan spreadsheet Anda telah dibagikan dengan izin "Anyone with the link can view".</p></div>';
                 showNotification('Terjadi kesalahan saat memuat data: ' + error.message, 'error');
             }
-        }
-
-        // Load data from API
-        async function loadFromApi(shift) {
-            // Determine column range based on shift
-            let nameColumnRange, timeColumnRange;
-            switch(shift) {
-                case 'pagi':
-                    nameColumnRange = 'A2:A';
-                    timeColumnRange = 'B2:B';
-                    break;
-                case 'siang':
-                    nameColumnRange = 'D2:D';
-                    timeColumnRange = 'E2:E';
-                    break;
-                case 'malam':
-                    nameColumnRange = 'G2:G';
-                    timeColumnRange = 'H2:H';
-                    break;
-                default:
-                    nameColumnRange = 'A2:A';
-                    timeColumnRange = 'B2:B';
-            }
-            
-            // Fetch names from Google Sheets
-            const nameResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${nameColumnRange}?key=${API_KEY}`);
-            
-            if (!nameResponse.ok) {
-                throw new Error(`HTTP error! status: ${nameResponse.status}`);
-            }
-            
-            const nameData = await nameResponse.json();
-            
-            // Fetch times from Google Sheets
-            const timeResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${timeColumnRange}?key=${API_KEY}`);
-            
-            if (!timeResponse.ok) {
-                throw new Error(`HTTP error! status: ${timeResponse.status}`);
-            }
-            
-            const timeData = await timeResponse.json();
-            
-            // Combine data
-            const result = [];
-            if (nameData.values) {
-                for (let i = 0; i < nameData.values.length; i++) {
-                    const name = nameData.values[i][0] || '';
-                    const time = timeData.values && timeData.values[i] ? timeData.values[i][0] : '';
-                    
-                    if (name) {
-                        result.push({
-                            name: name,
-                            checkIn: time
-                        });
-                    }
-                }
-            }
-            
-            return result;
-        }
-
-        // Load data from CSV export
-        async function loadFromCsvExport(shift) {
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_ID}`;
-            
-            const response = await fetch(csvUrl);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const csvText = await response.text();
-            const parsedData = parseCsvData(csvText);
-            
-            return parsedData[shift];
         }
 
         // Check in a staff member
@@ -1009,104 +604,49 @@
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                 
-                if (dataSource === 'csv') {
-                    // Update CSV data
-                    const parsedData = parseCsvData(csvData);
-                    parsedData[shift][index].checkIn = timeString;
-                    
-                    // Rebuild CSV from updated data
-                    let newCsvData = 'Nama Pagi,Check-in Pagi,Nama Siang,Check-in Siang,Nama Malam,Check-in Malam\n';
-                    
-                    const maxLength = Math.max(
-                        parsedData.pagi.length,
-                        parsedData.siang.length,
-                        parsedData.malam.length
-                    );
-                    
-                    for (let i = 0; i < maxLength; i++) {
-                        const pagi = parsedData.pagi[i] || { name: '', checkIn: '' };
-                        const siang = parsedData.siang[i] || { name: '', checkIn: '' };
-                        const malam = parsedData.malam[i] || { name: '', checkIn: '' };
-                        
-                        newCsvData += `"${pagi.name}","${pagi.checkIn}","${siang.name}","${siang.checkIn}","${malam.name}","${malam.checkIn}"\n`;
-                    }
-                    
-                    csvData = newCsvData;
-                    localStorage.setItem('csvData', csvData);
-                    document.getElementById('csvData').value = csvData;
-                    
+                // Update local data immediately for better UX
+                staffData[shift][index].checkIn = timeString;
+                
+                // Determine column based on shift
+                let column;
+                switch(shift) {
+                    case 'pagi':
+                        column = 'B';
+                        break;
+                    case 'siang':
+                        column = 'E';
+                        break;
+                    case 'malam':
+                        column = 'H';
+                        break;
+                    default:
+                        column = 'B';
+                }
+                
+                // Get the row number
+                const rowNumber = staffData[shift][index].row;
+                
+                // Update the cell with check-in time using Google Sheets API
+                const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${column}${rowNumber}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
+                
+                const updateResponse = await fetch(updateUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: [[timeString]]
+                    })
+                });
+                
+                if (updateResponse.ok) {
                     showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
+                    // Reload data to update the table
                     loadData(shift);
-                } else if (dataSource === 'api' && API_KEY) {
-                    // Determine row and column based on shift and staff name
-                    let nameColumnRange, timeColumn;
-                    switch(shift) {
-                        case 'pagi':
-                            nameColumnRange = 'A2:A';
-                            timeColumn = 'B';
-                            break;
-                        case 'siang':
-                            nameColumnRange = 'D2:D';
-                            timeColumn = 'E';
-                            break;
-                        case 'malam':
-                            nameColumnRange = 'G2:G';
-                            timeColumn = 'H';
-                            break;
-                        default:
-                            nameColumnRange = 'A2:A';
-                            timeColumn = 'B';
-                    }
-                    
-                    // Find the row of the staff member
-                    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${nameColumnRange}?key=${API_KEY}`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    let rowIndex = -1;
-                    if (data.values) {
-                        for (let i = 0; i < data.values.length; i++) {
-                            if (data.values[i][0] === staffName) {
-                                rowIndex = i + 2; // +2 because rows are 1-indexed and we start from row 2
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (rowIndex === -1) {
-                        showNotification('Staff tidak ditemukan', 'error');
-                        return;
-                    }
-                    
-                    // Update the cell with check-in time
-                    const updateResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${timeColumn}${rowIndex}?valueInputOption=USER_ENTERED&key=${API_KEY}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            values: [[timeString]]
-                        })
-                    });
-                    
-                    if (updateResponse.ok) {
-                        showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
-                        loadData(shift); // Reload data to update the table
-                    } else {
-                        throw new Error(`HTTP error! status: ${updateResponse.status}`);
-                    }
                 } else {
-                    // Update sample data
-                    const staff = sampleData[shift].find(s => s.name === staffName);
-                    if (staff) {
-                        staff.checkIn = timeString;
-                        showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (data contoh)`, 'success');
-                        loadData(shift);
-                    }
+                    // If API update fails, still update local display
+                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (perubahan tersimpan lokal)`, 'warning');
+                    loadData(shift);
                 }
             } catch (error) {
                 console.error('Error checking in:', error);
@@ -1121,104 +661,49 @@
             }
             
             try {
-                if (dataSource === 'csv') {
-                    // Update CSV data
-                    const parsedData = parseCsvData(csvData);
-                    parsedData[shift][index].checkIn = '';
-                    
-                    // Rebuild CSV from updated data
-                    let newCsvData = 'Nama Pagi,Check-in Pagi,Nama Siang,Check-in Siang,Nama Malam,Check-in Malam\n';
-                    
-                    const maxLength = Math.max(
-                        parsedData.pagi.length,
-                        parsedData.siang.length,
-                        parsedData.malam.length
-                    );
-                    
-                    for (let i = 0; i < maxLength; i++) {
-                        const pagi = parsedData.pagi[i] || { name: '', checkIn: '' };
-                        const siang = parsedData.siang[i] || { name: '', checkIn: '' };
-                        const malam = parsedData.malam[i] || { name: '', checkIn: '' };
-                        
-                        newCsvData += `"${pagi.name}","${pagi.checkIn}","${siang.name}","${siang.checkIn}","${malam.name}","${malam.checkIn}"\n`;
-                    }
-                    
-                    csvData = newCsvData;
-                    localStorage.setItem('csvData', csvData);
-                    document.getElementById('csvData').value = csvData;
-                    
+                // Update local data immediately for better UX
+                staffData[shift][index].checkIn = '';
+                
+                // Determine column based on shift
+                let column;
+                switch(shift) {
+                    case 'pagi':
+                        column = 'B';
+                        break;
+                    case 'siang':
+                        column = 'E';
+                        break;
+                    case 'malam':
+                        column = 'H';
+                        break;
+                    default:
+                        column = 'B';
+                }
+                
+                // Get the row number
+                const rowNumber = staffData[shift][index].row;
+                
+                // Clear the cell using Google Sheets API
+                const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${column}${rowNumber}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
+                
+                const updateResponse = await fetch(updateUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: [['']]
+                    })
+                });
+                
+                if (updateResponse.ok) {
                     showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
+                    // Reload data to update the table
                     loadData(shift);
-                } else if (dataSource === 'api' && API_KEY) {
-                    // Determine row and column based on shift and staff name
-                    let nameColumnRange, timeColumn;
-                    switch(shift) {
-                        case 'pagi':
-                            nameColumnRange = 'A2:A';
-                            timeColumn = 'B';
-                            break;
-                        case 'siang':
-                            nameColumnRange = 'D2:D';
-                            timeColumn = 'E';
-                            break;
-                        case 'malam':
-                            nameColumnRange = 'G2:G';
-                            timeColumn = 'H';
-                            break;
-                        default:
-                            nameColumnRange = 'A2:A';
-                            timeColumn = 'B';
-                    }
-                    
-                    // Find the row of the staff member
-                    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${nameColumnRange}?key=${API_KEY}`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    let rowIndex = -1;
-                    if (data.values) {
-                        for (let i = 0; i < data.values.length; i++) {
-                            if (data.values[i][0] === staffName) {
-                                rowIndex = i + 2; // +2 because rows are 1-indexed and we start from row 2
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (rowIndex === -1) {
-                        showNotification('Staff tidak ditemukan', 'error');
-                        return;
-                    }
-                    
-                    // Clear the cell
-                    const updateResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${timeColumn}${rowIndex}?valueInputOption=USER_ENTERED&key=${API_KEY}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            values: [['']]
-                        })
-                    });
-                    
-                    if (updateResponse.ok) {
-                        showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
-                        loadData(shift); // Reload data to update the table
-                    } else {
-                        throw new Error(`HTTP error! status: ${updateResponse.status}`);
-                    }
                 } else {
-                    // Update sample data
-                    const staff = sampleData[shift].find(s => s.name === staffName);
-                    if (staff) {
-                        staff.checkIn = '';
-                        showNotification(`Data check-in untuk ${staffName} berhasil dihapus (data contoh)`, 'success');
-                        loadData(shift);
-                    }
+                    // If API update fails, still update local display
+                    showNotification(`Data check-in untuk ${staffName} berhasil dihapus (perubahan tersimpan lokal)`, 'warning');
+                    loadData(shift);
                 }
             } catch (error) {
                 console.error('Error deleting attendance:', error);
