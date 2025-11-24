@@ -87,7 +87,7 @@
             color: var(--primary-color);
         }
 
-        .sync-status {
+        .connection-status {
             display: flex;
             align-items: center;
             gap: 5px;
@@ -96,79 +96,36 @@
             margin-top: 5px;
         }
 
-        .sync-status.synced {
+        .connection-status.connected {
             color: var(--secondary-color);
         }
 
-        .sync-status.syncing {
-            color: var(--warning-color);
-        }
-
-        .sync-status.error {
+        .connection-status.disconnected {
             color: var(--danger-color);
         }
 
-        .api-config {
+        .debug-info {
             background-color: white;
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .api-config h3 {
-            margin-bottom: 15px;
-            color: var(--dark-color);
-        }
-
-        .api-input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .api-input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            font-family: monospace;
-        }
-
-        .api-button {
-            padding: 10px 20px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        .api-button:hover {
-            background-color: #3367d6;
-        }
-
-        .api-instructions {
-            background-color: #f8f9fa;
-            border-left: 4px solid var(--primary-color);
             padding: 15px;
-            border-radius: var(--border-radius);
+            margin-bottom: 20px;
             font-size: 14px;
         }
 
-        .api-instructions h4 {
+        .debug-info h3 {
             margin-bottom: 10px;
             color: var(--primary-color);
         }
 
-        .api-instructions ol {
-            margin-left: 20px;
-        }
-
-        .api-instructions li {
-            margin-bottom: 5px;
+        .debug-content {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
         }
 
         .tabs {
@@ -260,7 +217,7 @@
             background-color: #2a8c43;
         }
 
-        .refresh-btn.syncing {
+        .refresh-btn.loading {
             background-color: var(--warning-color);
         }
 
@@ -334,21 +291,10 @@
         .time-display {
             font-weight: 500;
             color: var(--secondary-color);
-            position: relative;
         }
 
-        .time-display.syncing::after {
-            content: '';
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 12px;
-            height: 12px;
-            border: 2px solid var(--warning-color);
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s linear infinite;
+        .time-display.local-only {
+            color: var(--warning-color);
         }
 
         .notification {
@@ -380,6 +326,10 @@
 
         .notification.warning {
             background-color: var(--warning-color);
+        }
+
+        .notification.info {
+            background-color: var(--primary-color);
         }
 
         .loading {
@@ -457,30 +407,18 @@
                 <div class="date-time">
                     <div class="current-date" id="currentDate"></div>
                     <div class="current-time" id="currentTime"></div>
-                    <div class="sync-status" id="syncStatus">
-                        <i class="fas fa-check-circle"></i>
-                        <span>Tersinkronisasi</span>
+                    <div class="connection-status" id="connectionStatus">
+                        <i class="fas fa-wifi"></i>
+                        <span>Memeriksa koneksi...</span>
                     </div>
                 </div>
             </div>
         </header>
 
-        <div class="api-config">
-            <h3>Konfigurasi API Google Sheets</h3>
-            <div class="api-input-group">
-                <input type="text" id="apiKeyInput" class="api-input" placeholder="Masukkan API Key Google Sheets Anda">
-                <button class="api-button" onclick="saveApiKey()">Simpan</button>
-            </div>
-            <div class="api-instructions">
-                <h4>Cara Mengatasi Error 401 (Unauthorized):</h4>
-                <ol>
-                    <li>Buka <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
-                    <li>Pilih project yang sama dengan API Key Anda</li>
-                    <li>Aktifkan Google Sheets API jika belum aktif</li>
-                    <li>Buat API Key baru atau gunakan yang sudah ada</li>
-                    <li>Bagikan spreadsheet Anda dengan izin "Anyone with the link can view"</li>
-                    <li>Masukkan API Key yang valid di atas dan klik Simpan</li>
-                </ol>
+        <div class="debug-info">
+            <h3>Informasi Koneksi</h3>
+            <div class="debug-content" id="debugContent">
+                Memeriksa koneksi ke Google Sheets...
             </div>
         </div>
 
@@ -557,8 +495,8 @@
         // Google Sheets Configuration
         const SPREADSHEET_ID = '18XfgBl-55086BTNlRiOdhLP3s-Th9ZllKBnnafE30gg';
         const SHEET_ID = '439919036';
-        let API_KEY = localStorage.getItem('googleSheetsApiKey') || '';
-
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_ID}`;
+        
         // Current active shift
         let currentShift = 'pagi';
         let staffData = {
@@ -566,16 +504,12 @@
             siang: [],
             malam: []
         };
+        let localAttendanceData = JSON.parse(localStorage.getItem('localAttendanceData')) || {};
+        let connectionStatus = 'unknown';
         let autoRefreshInterval;
-        let localData = localStorage.getItem('localAttendanceData') ? JSON.parse(localStorage.getItem('localAttendanceData')) : {};
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
-            // Set API key from localStorage if exists
-            if (API_KEY) {
-                document.getElementById('apiKeyInput').value = API_KEY;
-            }
-            
             // Update date and time
             updateDateTime();
             setInterval(updateDateTime, 1000);
@@ -583,29 +517,63 @@
             // Setup tab switching
             setupTabs();
 
-            // Load initial data
-            loadData('pagi');
-            
+            // Test connection and load initial data
+            testConnection().then(() => {
+                loadData('pagi');
+            });
+
             // Setup auto-refresh every 30 seconds
             autoRefreshInterval = setInterval(() => {
                 if (document.visibilityState === 'visible') {
-                    loadData(currentShift);
+                    testConnection().then(() => {
+                        loadData(currentShift);
+                    });
                 }
             }, 30000);
         });
 
-        // Save API Key
-        function saveApiKey() {
-            const apiKeyInput = document.getElementById('apiKeyInput');
-            API_KEY = apiKeyInput.value.trim();
+        // Test connection to Google Sheets
+        async function testConnection() {
+            const debugContent = document.getElementById('debugContent');
+            const connectionStatusEl = document.getElementById('connectionStatus');
             
-            if (API_KEY) {
-                localStorage.setItem('googleSheetsApiKey', API_KEY);
-                showNotification('API Key berhasil disimpan', 'success');
-                // Reload data with new API key
-                loadData(currentShift);
-            } else {
-                showNotification('API Key tidak boleh kosong', 'error');
+            debugContent.textContent = 'Menguji koneksi ke Google Sheets...\n';
+            connectionStatusEl.className = 'connection-status';
+            connectionStatusEl.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i><span>Menguji koneksi...</span>';
+            
+            try {
+                const response = await fetch(CSV_URL, { method: 'HEAD' });
+                
+                if (response.ok) {
+                    connectionStatus = 'connected';
+                    debugContent.textContent += `✓ Koneksi berhasil!\n`;
+                    debugContent.textContent += `URL: ${CSV_URL}\n`;
+                    debugContent.textContent += `Status: ${response.status} ${response.statusText}\n`;
+                    debugContent.textContent += `Content-Type: ${response.headers.get('content-type')}\n`;
+                    debugContent.textContent += `Timestamp: ${new Date().toLocaleString('id-ID')}\n`;
+                    
+                    connectionStatusEl.className = 'connection-status connected';
+                    connectionStatusEl.innerHTML = '<i class="fas fa-check-circle"></i><span>Terhubung</span>';
+                    
+                    showNotification('Koneksi ke Google Sheets berhasil', 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                connectionStatus = 'disconnected';
+                debugContent.textContent += `✗ Koneksi gagal!\n`;
+                debugContent.textContent += `Error: ${error.message}\n`;
+                debugContent.textContent += `URL: ${CSV_URL}\n`;
+                debugContent.textContent += `Timestamp: ${new Date().toLocaleString('id-ID')}\n`;
+                debugContent.textContent += `\nKemungkinan penyebab:\n`;
+                debugContent.textContent += `1. Spreadsheet tidak dibagikan secara publik\n`;
+                debugContent.textContent += `2. URL spreadsheet salah\n`;
+                debugContent.textContent += `3. Masalah jaringan\n`;
+                
+                connectionStatusEl.className = 'connection-status disconnected';
+                connectionStatusEl.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>Tidak terhubung</span>';
+                
+                showNotification('Tidak dapat terhubung ke Google Sheets. Menggunakan mode offline.', 'warning');
             }
         }
 
@@ -662,67 +630,42 @@
                 // Extract data based on column positions
                 if (values[0]) { // Column A - Nama Pagi
                     const staffName = values[0];
-                    const checkInTime = values[1] || (localData.pagi && localData.pagi[staffName]) || '';
+                    const checkInTime = values[1] || (localAttendanceData.pagi && localAttendanceData.pagi[staffName]) || '';
                     
                     result.pagi.push({
                         name: staffName,
                         checkIn: checkInTime,
-                        row: i + 2 // Store the original row number
+                        row: i + 2,
+                        isLocalOnly: !values[1] && !!(localAttendanceData.pagi && localAttendanceData.pagi[staffName])
                     });
                 }
                 
                 if (values[3]) { // Column D - Nama Siang
                     const staffName = values[3];
-                    const checkInTime = values[4] || (localData.siang && localData.siang[staffName]) || '';
+                    const checkInTime = values[4] || (localAttendanceData.siang && localAttendanceData.siang[staffName]) || '';
                     
                     result.siang.push({
                         name: staffName,
                         checkIn: checkInTime,
-                        row: i + 2 // Store the original row number
+                        row: i + 2,
+                        isLocalOnly: !values[4] && !!(localAttendanceData.siang && localAttendanceData.siang[staffName])
                     });
                 }
                 
                 if (values[6]) { // Column G - Nama Malam
                     const staffName = values[6];
-                    const checkInTime = values[7] || (localData.malam && localData.malam[staffName]) || '';
+                    const checkInTime = values[7] || (localAttendanceData.malam && localAttendanceData.malam[staffName]) || '';
                     
                     result.malam.push({
                         name: staffName,
                         checkIn: checkInTime,
-                        row: i + 2 // Store the original row number
+                        row: i + 2,
+                        isLocalOnly: !values[7] && !!(localAttendanceData.malam && localAttendanceData.malam[staffName])
                     });
                 }
             }
             
             return result;
-        }
-
-        // Update sync status
-        function updateSyncStatus(status, message) {
-            const syncStatus = document.getElementById('syncStatus');
-            const icon = syncStatus.querySelector('i');
-            const text = syncStatus.querySelector('span');
-            
-            syncStatus.className = 'sync-status ' + status;
-            
-            switch(status) {
-                case 'synced':
-                    icon.className = 'fas fa-check-circle';
-                    text.textContent = message || 'Tersinkronisasi';
-                    break;
-                case 'syncing':
-                    icon.className = 'fas fa-sync-alt fa-spin';
-                    text.textContent = message || 'Menyinkronisasi...';
-                    break;
-                case 'error':
-                    icon.className = 'fas fa-exclamation-circle';
-                    text.textContent = message || 'Gagal sinkronisasi';
-                    break;
-                case 'offline':
-                    icon.className = 'fas fa-wifi';
-                    text.textContent = message || 'Mode offline';
-                    break;
-            }
         }
 
         // Load data from Google Sheets
@@ -735,31 +678,54 @@
                 container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
             }
             
-            refreshBtn.classList.add('syncing');
-            updateSyncStatus('syncing', 'Memuat data...');
+            refreshBtn.classList.add('loading');
             
             try {
-                // Use CSV export method to get data
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${SHEET_ID}`;
-                
-                const response = await fetch(csvUrl);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                if (connectionStatus === 'connected') {
+                    // Try to load from Google Sheets
+                    const response = await fetch(CSV_URL);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const csvText = await response.text();
+                    const newData = parseCsvData(csvText);
+                    
+                    // Update staff data
+                    staffData = newData;
+                } else {
+                    // Use sample data when offline
+                    staffData = {
+                        pagi: [
+                            { name: 'Ahmad Rizki', checkIn: localAttendanceData.pagi?.['Ahmad Rizki'] || '', row: 2, isLocalOnly: !!localAttendanceData.pagi?.['Ahmad Rizki'] },
+                            { name: 'Siti Nurhaliza', checkIn: localAttendanceData.pagi?.['Siti Nurhaliza'] || '', row: 3, isLocalOnly: !!localAttendanceData.pagi?.['Siti Nurhaliza'] },
+                            { name: 'Budi Santoso', checkIn: localAttendanceData.pagi?.['Budi Santoso'] || '', row: 4, isLocalOnly: !!localAttendanceData.pagi?.['Budi Santoso'] },
+                            { name: 'Dewi Lestari', checkIn: localAttendanceData.pagi?.['Dewi Lestari'] || '', row: 5, isLocalOnly: !!localAttendanceData.pagi?.['Dewi Lestari'] },
+                            { name: 'Eko Prasetyo', checkIn: localAttendanceData.pagi?.['Eko Prasetyo'] || '', row: 6, isLocalOnly: !!localAttendanceData.pagi?.['Eko Prasetyo'] }
+                        ],
+                        siang: [
+                            { name: 'Fajar Kurniawan', checkIn: localAttendanceData.siang?.['Fajar Kurniawan'] || '', row: 2, isLocalOnly: !!localAttendanceData.siang?.['Fajar Kurniawan'] },
+                            { name: 'Gita Savitri', checkIn: localAttendanceData.siang?.['Gita Savitri'] || '', row: 3, isLocalOnly: !!localAttendanceData.siang?.['Gita Savitri'] },
+                            { name: 'Hadi Pranoto', checkIn: localAttendanceData.siang?.['Hadi Pranoto'] || '', row: 4, isLocalOnly: !!localAttendanceData.siang?.['Hadi Pranoto'] },
+                            { name: 'Indah Permata', checkIn: localAttendanceData.siang?.['Indah Permata'] || '', row: 5, isLocalOnly: !!localAttendanceData.siang?.['Indah Permata'] },
+                            { name: 'Joko Widodo', checkIn: localAttendanceData.siang?.['Joko Widodo'] || '', row: 6, isLocalOnly: !!localAttendanceData.siang?.['Joko Widodo'] }
+                        ],
+                        malam: [
+                            { name: 'Kartika Sari', checkIn: localAttendanceData.malam?.['Kartika Sari'] || '', row: 2, isLocalOnly: !!localAttendanceData.malam?.['Kartika Sari'] },
+                            { name: 'Lukman Hakim', checkIn: localAttendanceData.malam?.['Lukman Hakim'] || '', row: 3, isLocalOnly: !!localAttendanceData.malam?.['Lukman Hakim'] },
+                            { name: 'Maya Putri', checkIn: localAttendanceData.malam?.['Maya Putri'] || '', row: 4, isLocalOnly: !!localAttendanceData.malam?.['Maya Putri'] },
+                            { name: 'Nanda Pratama', checkIn: localAttendanceData.malam?.['Nanda Pratama'] || '', row: 5, isLocalOnly: !!localAttendanceData.malam?.['Nanda Pratama'] },
+                            { name: 'Omar Hakim', checkIn: localAttendanceData.malam?.['Omar Hakim'] || '', row: 6, isLocalOnly: !!localAttendanceData.malam?.['Omar Hakim'] }
+                        ]
+                    };
                 }
-                
-                const csvText = await response.text();
-                const newData = parseCsvData(csvText);
-                
-                // Update staff data
-                staffData = newData;
                 
                 const data = staffData[shift];
                 
                 if (!data || data.length === 0) {
                     container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Tidak ada data staff untuk shift ini</p></div>';
-                    updateSyncStatus('synced');
-                    refreshBtn.classList.remove('syncing');
+                    refreshBtn.classList.remove('loading');
                     return;
                 }
                 
@@ -777,19 +743,20 @@
                     <tbody>
                         ${data.map((staff, index) => {
                             const isCheckedIn = staff.checkIn !== '';
-                            const isLocalOnly = localData[shift] && localData[shift][staff.name] && staff.checkIn === localData[shift][staff.name];
                             
                             return `
                                 <tr>
                                     <td>${index + 1}</td>
                                     <td>${staff.name}</td>
-                                    <td class="time-display" id="time-${shift}-${index}">${isCheckedIn ? staff.checkIn : '-'}</td>
+                                    <td class="time-display ${staff.isLocalOnly ? 'local-only' : ''}" id="time-${shift}-${index}">
+                                        ${isCheckedIn ? staff.checkIn : '-'}
+                                        ${staff.isLocalOnly ? ' <i class="fas fa-wifi" title="Data tersimpan lokal"></i>' : ''}
+                                    </td>
                                     <td>
                                         <button class="check-in-btn" id="btn-${shift}-${index}" ${isCheckedIn ? 'disabled' : ''} onclick="checkIn('${shift}', '${staff.name}', ${index})">
                                             <i class="fas fa-sign-in-alt"></i>Check-in
                                         </button>
                                         ${isCheckedIn ? `<button class="delete-btn" onclick="deleteAttendance('${shift}', '${staff.name}', ${index})"><i class="fas fa-trash"></i></button>` : ''}
-                                        ${isLocalOnly ? '<span style="color: var(--warning-color); font-size: 12px; margin-left: 5px;"><i class="fas fa-wifi"></i> Lokal</span>' : ''}
                                     </td>
                                 </tr>
                             `;
@@ -800,39 +767,38 @@
                 container.innerHTML = '';
                 container.appendChild(table);
                 
-                updateSyncStatus('synced');
-                refreshBtn.classList.remove('syncing');
+                refreshBtn.classList.remove('loading');
             } catch (error) {
                 console.error('Error loading data:', error);
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Terjadi kesalahan saat memuat data. Silakan periksa API Key Anda atau coba lagi.</p></div>';
-                updateSyncStatus('error', 'Gagal memuat data');
-                refreshBtn.classList.remove('syncing');
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Terjadi kesalahan saat memuat data. Menggunakan mode offline.</p></div>';
+                refreshBtn.classList.remove('loading');
                 showNotification('Terjadi kesalahan saat memuat data: ' + error.message, 'error');
             }
         }
 
         // Check in a staff member
-        async function checkIn(shift, staffName, index) {
+        function checkIn(shift, staffName, index) {
             try {
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                 
-                // Update local data immediately for better UX
+                // Update local data immediately
                 staffData[shift][index].checkIn = timeString;
+                staffData[shift][index].isLocalOnly = true;
                 
-                // Save to local storage as backup
-                if (!localData[shift]) {
-                    localData[shift] = {};
+                // Save to local storage
+                if (!localAttendanceData[shift]) {
+                    localAttendanceData[shift] = {};
                 }
-                localData[shift][staffName] = timeString;
-                localStorage.setItem('localAttendanceData', JSON.stringify(localData));
+                localAttendanceData[shift][staffName] = timeString;
+                localStorage.setItem('localAttendanceData', JSON.stringify(localAttendanceData));
                 
                 // Update UI immediately
                 const timeElement = document.getElementById(`time-${shift}-${index}`);
                 const btnElement = document.getElementById(`btn-${shift}-${index}`);
                 
-                timeElement.textContent = timeString;
-                timeElement.classList.add('syncing');
+                timeElement.innerHTML = `${timeString} <i class="fas fa-wifi" title="Data tersimpan lokal"></i>`;
+                timeElement.classList.add('local-only');
                 btnElement.disabled = true;
                 
                 // Add delete button
@@ -843,103 +809,32 @@
                 deleteBtn.setAttribute('onclick', `deleteAttendance('${shift}', '${staffName}', ${index})`);
                 btnContainer.appendChild(deleteBtn);
                 
-                // Add local indicator
-                const localIndicator = document.createElement('span');
-                localIndicator.style.color = 'var(--warning-color)';
-                localIndicator.style.fontSize = '12px';
-                localIndicator.style.marginLeft = '5px';
-                localIndicator.innerHTML = '<i class="fas fa-wifi"></i> Lokal';
-                btnContainer.appendChild(localIndicator);
-                
-                // Update sync status
-                updateSyncStatus('syncing', 'Menyimpan check-in...');
-                
-                // Check if API key is available
-                if (!API_KEY) {
-                    timeElement.classList.remove('syncing');
-                    updateSyncStatus('offline', 'Mode offline - Data tersimpan lokal');
-                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (tersimpan lokal)`, 'warning');
-                    return;
-                }
-                
-                // Determine column based on shift
-                let column;
-                switch(shift) {
-                    case 'pagi':
-                        column = 'B'; // Column B for Pagi shift
-                        break;
-                    case 'siang':
-                        column = 'E'; // Column E for Siang shift
-                        break;
-                    case 'malam':
-                        column = 'H'; // Column H for Malam shift
-                        break;
-                    default:
-                        column = 'B';
-                }
-                
-                // Get the row number
-                const rowNumber = staffData[shift][index].row;
-                
-                // Update the cell with check-in time using Google Sheets API
-                const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${column}${rowNumber}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
-                
-                // Send update to Google Sheets
-                const response = await fetch(updateUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        values: [[timeString]]
-                    })
-                });
-                
-                timeElement.classList.remove('syncing');
-                
-                if (response.ok) {
-                    updateSyncStatus('synced');
-                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString}`, 'success');
-                    
-                    // Remove local indicator
-                    if (localIndicator) {
-                        btnContainer.removeChild(localIndicator);
-                    }
-                    
-                    // Verify that update by refreshing data after a short delay
-                    setTimeout(() => {
-                        loadData(shift);
-                    }, 1000);
+                if (connectionStatus === 'connected') {
+                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (tersimpan lokal)`, 'success');
                 } else {
-                    const errorData = await response.json();
-                    if (response.status === 401) {
-                        updateSyncStatus('error', 'Error 401 - API Key tidak valid');
-                        showNotification('Error 401 - API Key tidak valid. Silakan periksa konfigurasi API Key Anda.', 'error');
-                    } else {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+                    showNotification(`${staffName} berhasil check-in pada pukul ${timeString} (mode offline)`, 'warning');
                 }
             } catch (error) {
                 console.error('Error checking in:', error);
-                updateSyncStatus('error', 'Gagal menyimpan check-in');
                 showNotification('Terjadi kesalahan saat check-in: ' + error.message, 'error');
             }
         }
 
         // Delete attendance record
-        async function deleteAttendance(shift, staffName, index) {
+        function deleteAttendance(shift, staffName, index) {
             if (!confirm(`Apakah Anda yakin ingin menghapus data check-in untuk ${staffName}?`)) {
                 return;
             }
             
             try {
-                // Update local data immediately for better UX
+                // Update local data immediately
                 staffData[shift][index].checkIn = '';
+                staffData[shift][index].isLocalOnly = false;
                 
                 // Remove from local storage
-                if (localData[shift] && localData[shift][staffName]) {
-                    delete localData[shift][staffName];
-                    localStorage.setItem('localAttendanceData', JSON.stringify(localData));
+                if (localAttendanceData[shift] && localAttendanceData[shift][staffName]) {
+                    delete localAttendanceData[shift][staffName];
+                    localStorage.setItem('localAttendanceData', JSON.stringify(localAttendanceData));
                 }
                 
                 // Update UI immediately
@@ -947,7 +842,7 @@
                 const btnElement = document.getElementById(`btn-${shift}-${index}`);
                 
                 timeElement.textContent = '-';
-                timeElement.classList.add('syncing');
+                timeElement.classList.remove('local-only');
                 btnElement.disabled = false;
                 
                 // Remove delete button
@@ -957,78 +852,9 @@
                     btnContainer.removeChild(deleteBtn);
                 }
                 
-                // Remove local indicator if exists
-                const localIndicator = btnContainer.querySelector('span');
-                if (localIndicator) {
-                    btnContainer.removeChild(localIndicator);
-                }
-                
-                // Update sync status
-                updateSyncStatus('syncing', 'Menghapus check-in...');
-                
-                // Check if API key is available
-                if (!API_KEY) {
-                    timeElement.classList.remove('syncing');
-                    updateSyncStatus('offline', 'Mode offline - Data tersimpan lokal');
-                    showNotification(`Data check-in untuk ${staffName} berhasil dihapus (tersimpan lokal)`, 'warning');
-                    return;
-                }
-                
-                // Determine column based on shift
-                let column;
-                switch(shift) {
-                    case 'pagi':
-                        column = 'B'; // Column B for Pagi shift
-                        break;
-                    case 'siang':
-                        column = 'E'; // Column E for Siang shift
-                        break;
-                    case 'malam':
-                        column = 'H'; // Column H for Malam shift
-                        break;
-                    default:
-                        column = 'B';
-                }
-                
-                // Get the row number
-                const rowNumber = staffData[shift][index].row;
-                
-                // Clear the cell using Google Sheets API
-                const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!${column}${rowNumber}?valueInputOption=USER_ENTERED&key=${API_KEY}`;
-                
-                // Send update to Google Sheets
-                const response = await fetch(updateUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        values: [['']]
-                    })
-                });
-                
-                timeElement.classList.remove('syncing');
-                
-                if (response.ok) {
-                    updateSyncStatus('synced');
-                    showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
-                    
-                    // Verify that update by refreshing data after a short delay
-                    setTimeout(() => {
-                        loadData(shift);
-                    }, 1000);
-                } else {
-                    const errorData = await response.json();
-                    if (response.status === 401) {
-                        updateSyncStatus('error', 'Error 401 - API Key tidak valid');
-                        showNotification('Error 401 - API Key tidak valid. Silakan periksa konfigurasi API Key Anda.', 'error');
-                    } else {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                }
+                showNotification(`Data check-in untuk ${staffName} berhasil dihapus`, 'success');
             } catch (error) {
                 console.error('Error deleting attendance:', error);
-                updateSyncStatus('error', 'Gagal menghapus check-in');
                 showNotification('Terjadi kesalahan saat menghapus data: ' + error.message, 'error');
             }
         }
